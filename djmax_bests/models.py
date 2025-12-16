@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel, Field
 from decimal import Decimal
 from .constants import NEW_DLC
+from . import api_handler
 
 
 class VAPattern(BaseModel):
@@ -18,7 +19,7 @@ class VAPattern(BaseModel):
     dlcCode: str
 
 class VAFloor(BaseModel):
-    floorNumber: int
+    # floorNumber: int
     patterns: list[VAPattern]
 
 class VAResponse(BaseModel):
@@ -92,6 +93,7 @@ class DMBests(BaseModel):
 
     @staticmethod
     def from_VAResponse(username: str, bmode: str, va_response: VAResponse) -> "DMBests":
+        song_db = api_handler.fetch_song_db()
         basic_songs = []
         new_songs = []
 
@@ -99,6 +101,7 @@ class DMBests(BaseModel):
             for pattern in floor.patterns:
                 if (pattern.score is None) or (pattern.maxCombo is None):
                     continue
+                level = 
                 dm_song = DMSong(
                     songid=pattern.title,
                     title=pattern.name,
@@ -114,3 +117,36 @@ class DMBests(BaseModel):
                     basic_songs.append(dm_song)
 
         return DMBests(username=username, bmode=bmode, basic=basic_songs, new=new_songs)
+
+class DMSongDBDiff(BaseModel):
+    level: int
+    # floor: Decimal
+    # rating: int
+
+class DMSongDBBMode(BaseModel):
+    NM: DMSongDBDiff | None = None
+    HD: DMSongDBDiff | None = None
+    MX: DMSongDBDiff | None = None
+    SC: DMSongDBDiff | None = None
+
+class DMSongDBPatterns(BaseModel):
+    BMode_4: DMSongDBBMode = Field(alias="4B")
+    BMode_5: DMSongDBBMode = Field(alias="5B")
+    BMode_6: DMSongDBBMode = Field(alias="6B")
+    BMode_8: DMSongDBBMode = Field(alias="8B")
+
+class DMSongDBEntry(BaseModel):
+    songid: int = Field(alias="title")
+    patterns: DMSongDBPatterns
+
+class DMSongDB(RootModel[list[DMSongDBEntry]]):
+    def get_level(self, songid: int, bmode: str, diff: str) -> int | None:
+        for entry in self.root:
+            if entry.songid == songid:
+                bmode_field = f"BMode_{bmode}"
+                bmode_data: DMSongDBBMode = getattr(entry.patterns, bmode_field)
+                diff_data: DMSongDBDiff | None = getattr(bmode_data, diff)
+                if diff_data is None:
+                    return None
+                return diff_data.level
+        return None
