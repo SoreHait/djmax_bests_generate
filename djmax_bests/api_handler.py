@@ -11,4 +11,4 @@ def fetch_board_data(username: str, bmode: str, board: str) -> models.DMBests:
     response = requests.get(url)
     response.raise_for_status()
     va_resp = models.VAResponse.model_validate_json(response.text)
-    return models.DMBests.from_VAResponse(va_resp)
+    return models.DMBests.from_VAResponse(username, bmode, va_resp)

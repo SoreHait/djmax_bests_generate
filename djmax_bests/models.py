@@ -38,6 +38,8 @@ class DMSong(BaseModel):
     djpower: Decimal
 
 class DMBests(BaseModel):
+    username: str
+    bmode: str
     basic: list[DMSong]
     new: list[DMSong]
 
@@ -51,16 +53,33 @@ class DMBests(BaseModel):
 
     @property
     def basic_min_djpower(self) -> Decimal:
-        if not self.basic:
+        if not self.basic or self.basic_len < 70:
             return Decimal(0)
         return min(self.basic, key=lambda song: song.djpower).djpower
 
     @property
+    def basic_max_djpower(self) -> Decimal:
+        if not self.basic:
+            return Decimal(0)
+        return max(self.basic, key=lambda song: song.djpower).djpower
+
+    @property
     def new_min_djpower(self) -> Decimal:
-        if not self.new:
+        if not self.new or self.new_len < 30:
             return Decimal(0)
         return min(self.new, key=lambda song: song.djpower).djpower
 
+    @property
+    def new_max_djpower(self) -> Decimal:
+        if not self.new:
+            return Decimal(0)
+        return max(self.new, key=lambda song: song.djpower).djpower
+
+
+    def __add__(self, other: "DMBests") -> "DMBests":
+        combined_basic = self.basic + other.basic
+        combined_new = self.new + other.new
+        return DMBests(username=self.username, bmode=self.bmode, basic=combined_basic, new=combined_new)
 
     def justify(self):
         self.basic.sort(key=lambda song: song.djpower, reverse=True)
@@ -70,8 +89,9 @@ class DMBests(BaseModel):
         if self.new_len > 30:
             self.new = self.new[:30]
 
+
     @staticmethod
-    def from_VAResponse(va_response: VAResponse) -> "DMBests":
+    def from_VAResponse(username: str, bmode: str, va_response: VAResponse) -> "DMBests":
         basic_songs = []
         new_songs = []
 
@@ -93,4 +113,4 @@ class DMBests(BaseModel):
                 else:
                     basic_songs.append(dm_song)
 
-        return DMBests(basic=basic_songs, new=new_songs)
+        return DMBests(username=username, bmode=bmode, basic=basic_songs, new=new_songs)
