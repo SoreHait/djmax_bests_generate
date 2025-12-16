@@ -3,7 +3,7 @@ import os
 from . import models
 from . import api_handler
 from decimal import Decimal
-from .constants import CONVERT_CONSTANT, NEW_DLC
+from . import constants
 
 
 def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Image:
@@ -60,6 +60,7 @@ def generate_bests_image(data: models.DMBests) -> Image.Image:
 
     # footnote
     font = font.font_variant(size=20)
-    draw.text((20, size[1]-8), f"Convert Multiplier: {CONVERT_CONSTANT[data.bmode]} / New DLCs: {' '.join(NEW_DLC)}", font=font, fill='black', anchor="lm")
+    songdb = api_handler.fetch_song_db()
+    draw.text((20, size[1]-8), f"Convert Multiplier: {constants.CONVERT_CONSTANT[data.bmode]:.8f} / New DLCs: {', '.join(constants.NEW_DLC)} / New Songs: {', '.join(songdb.get_title(song) for song in constants.NEW_SONG)}", font=font, fill='black', anchor="lm")
 
     return image

@@ -2,6 +2,9 @@ from decimal import Decimal
 
 
 NEW_DLC = ["BA", "VL3", "PLI2", "ARC"]
+
+NEW_SONG = [722, 748, 749]
+
 CONVERT_CONSTANT = {
     "4": Decimal("9908.6175") / Decimal("9023.3420"),
     "5": Decimal("1783.6095") / Decimal("1631.3820"),

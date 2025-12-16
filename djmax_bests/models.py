@@ -1,6 +1,6 @@
 from pydantic import BaseModel, RootModel, Field
 from decimal import Decimal
-from .constants import NEW_DLC, CONVERT_CONSTANT
+from . import constants
 from . import api_handler
 
 
@@ -92,7 +92,7 @@ class DMBests(BaseModel):
 
     @property
     def total_djpower(self) -> Decimal:
-        return self.total_djpower_raw * CONVERT_CONSTANT[self.bmode]
+        return self.total_djpower_raw * constants.CONVERT_CONSTANT[self.bmode]
 
 
     def __add__(self, other: "DMBests") -> "DMBests":
@@ -120,8 +120,6 @@ class DMBests(BaseModel):
                 if (pattern.score is None) or (pattern.maxCombo is None) or (pattern.score < Decimal("90.00")):
                     continue
                 level = song_db.get_level(pattern.title, bmode, pattern.pattern)
-                if level is None:
-                    raise ValueError(f"Level not found for songid {pattern.title}, bmode {bmode}, pattern {pattern.pattern}")
                 dm_song = DMSong(
                     songid=pattern.title,
                     title=pattern.name,
@@ -131,7 +129,7 @@ class DMBests(BaseModel):
                     maxCombo=pattern.maxCombo,
                     djpower=pattern.djpower
                 )
-                if pattern.dlcCode in NEW_DLC:
+                if pattern.dlcCode in constants.NEW_DLC or pattern.title in constants.NEW_SONG:
                     new_songs.append(dm_song)
                 else:
                     basic_songs.append(dm_song)
@@ -157,16 +155,21 @@ class DMSongDBPatterns(BaseModel):
 
 class DMSongDBEntry(BaseModel):
     songid: int = Field(alias="title")
+    title: str = Field(alias="name")
     patterns: DMSongDBPatterns
 
 class DMSongDB(RootModel[list[DMSongDBEntry]]):
-    def get_level(self, songid: int, bmode: str, diff: str) -> int | None:
+    def get_level(self, songid: int, bmode: str, diff: str) -> int:
         for entry in self.root:
             if entry.songid == songid:
                 bmode_field = f"BMode_{bmode}"
                 bmode_data: DMSongDBBMode = getattr(entry.patterns, bmode_field)
-                diff_data: DMSongDBDiff | None = getattr(bmode_data, diff)
-                if diff_data is None:
-                    return None
+                diff_data: DMSongDBDiff = getattr(bmode_data, diff)
                 return diff_data.level
-        return None
+        raise ValueError(f"Song ID {songid} with BMode {bmode} and diff {diff} not found in DB.")
+
+    def get_title(self, songid: int) -> str:
+        for entry in self.root:
+            if entry.songid == songid:
+                return entry.title
+        raise ValueError(f"Song ID {songid} not found in DB.")
