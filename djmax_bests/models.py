@@ -1,6 +1,6 @@
 from pydantic import BaseModel, RootModel, Field
 from decimal import Decimal
-from .constants import NEW_DLC
+from .constants import NEW_DLC, CONVERT_CONSTANT
 from . import api_handler
 
 
@@ -76,6 +76,24 @@ class DMBests(BaseModel):
             return Decimal(0)
         return max(self.new, key=lambda song: song.djpower).djpower
 
+    @property
+    def total_basic_djpower(self) -> Decimal:
+        retval = sum(song.djpower for song in self.basic)
+        return retval if retval != 0 else Decimal(0)
+
+    @property
+    def total_new_djpower(self) -> Decimal:
+        retval = sum(song.djpower for song in self.new)
+        return retval if retval != 0 else Decimal(0)
+
+    @property
+    def total_djpower_raw(self) -> Decimal:
+        return self.total_basic_djpower + self.total_new_djpower
+
+    @property
+    def total_djpower(self) -> Decimal:
+        return self.total_djpower_raw * CONVERT_CONSTANT
+
 
     def __add__(self, other: "DMBests") -> "DMBests":
         combined_basic = self.basic + other.basic
@@ -99,14 +117,16 @@ class DMBests(BaseModel):
 
         for floor in va_response.floors:
             for pattern in floor.patterns:
-                if (pattern.score is None) or (pattern.maxCombo is None):
+                if (pattern.score is None) or (pattern.maxCombo is None) or (pattern.score < Decimal("90.00")):
                     continue
-                level = 
+                level = song_db.get_level(pattern.title, bmode, pattern.pattern)
+                if level is None:
+                    raise ValueError(f"Level not found for songid {pattern.title}, bmode {bmode}, pattern {pattern.pattern}")
                 dm_song = DMSong(
                     songid=pattern.title,
                     title=pattern.name,
                     pattern=pattern.pattern,
-                    level=floor.floorNumber,
+                    level=level,
                     score=pattern.score,
                     maxCombo=pattern.maxCombo,
                     djpower=pattern.djpower

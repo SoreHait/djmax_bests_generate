@@ -20,6 +20,7 @@ def get_cover(songid: int) -> Image.Image:
         return Image.open(img_path)
 
     url = f"https://v-archive.net/static/images/jackets/{songid}.jpg"
+    print(f'Fetching cover {songid}')
     response = requests.get(url)
     if response.status_code == 200:
         with open(img_path, 'wb') as f:
