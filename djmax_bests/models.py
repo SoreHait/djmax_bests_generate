@@ -92,7 +92,7 @@ class DMBests(BaseModel):
 
     @property
     def total_djpower(self) -> Decimal:
-        return self.total_djpower_raw * CONVERT_CONSTANT
+        return self.total_djpower_raw * CONVERT_CONSTANT[self.bmode]
 
 
     def __add__(self, other: "DMBests") -> "DMBests":

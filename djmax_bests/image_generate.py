@@ -3,6 +3,7 @@ import os
 from . import models
 from . import api_handler
 from decimal import Decimal
+from .constants import CONVERT_CONSTANT, NEW_DLC
 
 
 def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Image:
@@ -32,7 +33,7 @@ def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Imag
 
 def generate_bests_image(data: models.DMBests) -> Image.Image:
     # Layout: 5*20
-    size = (270*5, 80*20+80)
+    size = (270*5, 80*20+40+40+20)
     image = Image.new("RGBA", size, 'white')
     draw = ImageDraw.Draw(image)
     font_path = os.path.join(os.path.dirname(__file__), "fonts", "LINESeedKRJP.ttf")
@@ -56,5 +57,9 @@ def generate_bests_image(data: models.DMBests) -> Image.Image:
         x = (idx % 5) * 270
         y = (idx // 5) * 80 + 80*14 + 40*2
         image.paste(song_image, (x, y))
+
+    # footnote
+    font = font.font_variant(size=20)
+    draw.text((20, size[1]-8), f"Convert Multiplier: {CONVERT_CONSTANT[data.bmode]} / New DLCs: {' '.join(NEW_DLC)}", font=font, fill='black', anchor="lm")
 
     return image
