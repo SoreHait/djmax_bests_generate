@@ -1,7 +1,6 @@
 from pydantic import BaseModel, RootModel, Field
 from decimal import Decimal
-from . import constants
-from . import api_handler
+from . import constants, api_handler, util
 
 
 class VAPattern(BaseModel):
@@ -141,7 +140,7 @@ class DMBests(BaseModel):
                     dlc=pattern.dlc,
                     dlc_code=pattern.dlcCode
                 )
-                if dm_song.dlc_code in constants.NEW_DLC or dm_song.songid in constants.NEW_SONG:
+                if util.is_new(dm_song.dlc_code, dm_song.songid):
                     new_songs.append(dm_song)
                 else:
                     basic_songs.append(dm_song)
@@ -168,6 +167,7 @@ class DMSongDBPatterns(BaseModel):
 class DMSongDBEntry(BaseModel):
     songid: int = Field(alias="title")
     title: str = Field(alias="name")
+    dlc_code: str = Field(alias="dlcCode")
     patterns: DMSongDBPatterns
 
 class DMSongDB(RootModel[list[DMSongDBEntry]]):

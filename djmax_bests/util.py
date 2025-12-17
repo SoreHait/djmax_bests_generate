@@ -33,3 +33,6 @@ def wrap_text(text: str, font: FreeTypeFont, wrap_width: int) -> str:
             text = text[:-1]
         text += '...'
     return text
+
+def is_new(dlc_code: str, songid: int) -> bool:
+    return (dlc_code in constants.NEW_DLC) or (songid in constants.NEW_SONG)
