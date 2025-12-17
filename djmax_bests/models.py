@@ -15,7 +15,7 @@ class VAPattern(BaseModel):
     djpower: Decimal
     # rating: Decimal
     # updatedAt: str(date-like object) | None
-    # dlc: str
+    dlc: str
     dlcCode: str
 
 class VAFloor(BaseModel):
@@ -37,6 +37,8 @@ class DMSong(BaseModel):
     score: Decimal
     maxCombo: int
     djpower: Decimal
+    dlc: str
+    dlc_code: str
 
 class DMBests(BaseModel):
     username: str
@@ -77,22 +79,30 @@ class DMBests(BaseModel):
         return max(self.new, key=lambda song: song.djpower).djpower
 
     @property
-    def total_basic_djpower(self) -> Decimal:
+    def total_basic_djpower_raw(self) -> Decimal:
         retval = sum(song.djpower for song in self.basic)
         return retval if retval != 0 else Decimal(0)
 
     @property
-    def total_new_djpower(self) -> Decimal:
+    def total_new_djpower_raw(self) -> Decimal:
         retval = sum(song.djpower for song in self.new)
         return retval if retval != 0 else Decimal(0)
 
     @property
+    def total_basic_djpower(self) -> Decimal:
+        return self.total_basic_djpower_raw * constants.CONVERT_CONSTANT[self.bmode]
+
+    @property
+    def total_new_djpower(self) -> Decimal:
+        return self.total_new_djpower_raw * constants.CONVERT_CONSTANT[self.bmode]
+
+    @property
     def total_djpower_raw(self) -> Decimal:
-        return self.total_basic_djpower + self.total_new_djpower
+        return self.total_basic_djpower_raw + self.total_new_djpower_raw
 
     @property
     def total_djpower(self) -> Decimal:
-        return self.total_djpower_raw * constants.CONVERT_CONSTANT[self.bmode]
+        return self.total_basic_djpower + self.total_new_djpower
 
 
     def __add__(self, other: "DMBests") -> "DMBests":
@@ -127,9 +137,11 @@ class DMBests(BaseModel):
                     level=level,
                     score=pattern.score,
                     maxCombo=pattern.maxCombo,
-                    djpower=pattern.djpower
+                    djpower=pattern.djpower,
+                    dlc=pattern.dlc,
+                    dlc_code=pattern.dlcCode
                 )
-                if pattern.dlcCode in constants.NEW_DLC or pattern.title in constants.NEW_SONG:
+                if dm_song.dlc_code in constants.NEW_DLC or dm_song.songid in constants.NEW_SONG:
                     new_songs.append(dm_song)
                 else:
                     basic_songs.append(dm_song)
