@@ -1,15 +1,15 @@
 from decimal import Decimal
 
 
-NEW_DLC = ["BA", "VL3", "PLI2", "ARC"]
+NEW_DLC = ["VL3", "PLI2", "ARC", "VL4"]
 
 NEW_SONG = [722, 748, 749]
 
 CONVERT_CONSTANT = {
-    "4": Decimal("10000.0000") / Decimal("9106.56"),
-    "5": Decimal("10000.0000") / Decimal("9146.52"),
-    "6": Decimal("10000.0000") / Decimal("9119.88"),
-    "8": Decimal("10000.0000") / Decimal("9177.60")
+    "4": Decimal("10000.0000") / Decimal("9168.72"),
+    "5": Decimal("10000.0000") / Decimal("9213.12"),
+    "6": Decimal("10000.0000") / Decimal("9190.92"),
+    "8": Decimal("10000.0000") / Decimal("9257.52")
 }
 
 
@@ -50,6 +50,7 @@ DLC_COLOR = {
     "VL": "#49f8fc",
     "VL2": "#99ff33",
     "VL3": "#f26e7b",
+    "VL4": "#d4c393",
     "PLI1": "#dbd7ae",
     "PLI2": "#2269f7",
     "GG": "#d83e0e",
@@ -70,8 +71,10 @@ DLC_COLOR = {
 }
 
 DLC_NAME_OVERRIDE = {
+    "VL": "V LIBERTY",
     "VL2": "V LIBERTY 2",
     "VL3": "V LIBERTY 3",
+    "VL4": "V LIBERTY 4",
     "PLI1": "TRIBUTE #1",
     "PLI2": "64514 Part.1",
     "GG": "GUILTY GEAR",
