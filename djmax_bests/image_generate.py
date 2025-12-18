@@ -56,13 +56,13 @@ def generate_bests_image(data: models.DMBests) -> Image.Image:
     font_lt = ImageFont.truetype(os.path.join(FONT_PATH, "Respect_lt.ttf"), 58)
 
     # Userinfo
-    medal = Image.open(os.path.join(IMAGE_PATH, f"medal_placeholder.png"))
-    bg.paste(medal, (1034, 159))
+    djpower_tier, djpower_level = util.get_djpower_tier(data.total_djpower)
+    emblem = Image.open(os.path.join(IMAGE_PATH, 'emblems', f"{djpower_tier}.png")).resize((370, 370))
+    bg.paste(emblem, (1034, 159))
     draw.rectangle(bmode_strip_box, fill=constants.BMODE_COLOR[data.bmode])
     draw.text((282, 260), data.bmode, font=font_bd, fill='white', anchor="mm")
     draw.text((1535, 212), data.username, font=font_rg, fill='white', anchor="lm")
     font_bd = font_bd.font_variant(size=64)
-    djpower_tier, djpower_level = util.get_djpower_tier(data.total_djpower)
     djpower_desc = util.format_djpower_tier(djpower_tier, djpower_level)
     djpower_color = constants.DJPOWER_TIER_COLOR[djpower_tier]
     draw.text((1535, 306), djpower_desc, font=font_bd, fill=djpower_color, anchor="lm")
@@ -97,5 +97,7 @@ def generate_bests_image(data: models.DMBests) -> Image.Image:
     draw.text((570, 4545), f"{constants.CONVERT_CONSTANT[data.bmode]:.8f}", font=font_lt, fill='white', anchor="ls")
     draw.text((375, 4616), ', '.join(constants.NEW_DLC), font=font_lt, fill='white', anchor="ls")
     draw.text((385, 4687), ", ".join(songdb.get_title(songid) for songid in constants.NEW_SONG), font=font_lt, fill='white', anchor="ls")
+
+    draw.text((1540, 4545), "Under Development | Not Final Version", font=font_lt, fill='white', anchor="ms")
 
     return bg
