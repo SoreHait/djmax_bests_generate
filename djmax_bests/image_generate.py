@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 import os
 from . import models, constants, api_handler, util
 from decimal import Decimal
+from random import random
 
 
 IMAGE_PATH = os.path.join(os.path.dirname(__file__), "images")
@@ -57,14 +58,20 @@ def generate_bests_image(data: models.DMBests) -> Image.Image:
 
     # Userinfo
     djpower_tier, djpower_level = util.get_djpower_tier(data.total_djpower)
-    emblem = Image.open(os.path.join(IMAGE_PATH, 'emblems', f"{djpower_tier}.png")).resize((370, 370))
+    djpower_desc = util.format_djpower_tier(djpower_tier, djpower_level)
+    djpower_color = constants.DJPOWER_TIER_COLOR[djpower_tier]
+
+    if djpower_tier == "middleman" and random() < 0.1:
+        djpower_level = 0
+    else: # this is just a temporary solution and should be removed later
+        djpower_level = ""
+
+    emblem = Image.open(os.path.join(IMAGE_PATH, 'emblems', f"{djpower_tier}_{djpower_level}.png")).resize((370, 370))
     bg.paste(emblem, (1034, 159))
     draw.rectangle(bmode_strip_box, fill=constants.BMODE_COLOR[data.bmode])
     draw.text((282, 370), data.bmode, font=font_bd, fill='white', anchor="ms")
     draw.text((1535, 212), data.username, font=font_rg, fill='white', anchor="lm")
     font_bd = font_bd.font_variant(size=64)
-    djpower_desc = util.format_djpower_tier(djpower_tier, djpower_level)
-    djpower_color = constants.DJPOWER_TIER_COLOR[djpower_tier]
     draw.text((1535, 306), djpower_desc, font=font_bd, fill=djpower_color, anchor="lm")
     font_rg = font_rg.font_variant(size=120)
     draw.text((1535, 400), f"{data.total_djpower:.4f}", font=font_rg, fill='white', anchor="lm")
