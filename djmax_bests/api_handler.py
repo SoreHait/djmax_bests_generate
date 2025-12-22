@@ -55,3 +55,8 @@ def fetch_song_db() -> models.DMSongDB:
     with open(db_path, 'w', encoding='utf-8') as f:
         f.write(response.text)
     return models.DMSongDB.model_validate_json(response.text)
+
+def remove_cache():
+    db_path = os.path.join(CACHE_PATH, 'songs.json')
+    if os.path.exists(db_path):
+        os.remove(db_path)
