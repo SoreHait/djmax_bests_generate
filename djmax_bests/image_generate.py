@@ -7,6 +7,8 @@ from random import random
 
 IMAGE_PATH = os.path.join(os.path.dirname(__file__), "images")
 FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts")
+EMBLEM_PATH = os.path.join(IMAGE_PATH, "emblems")
+EMBLEM_BG_PATH = os.path.join(IMAGE_PATH, "emblem_bg")
 
 def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Image:
     overlay = Image.open(os.path.join(IMAGE_PATH, f"{type}_card.png"))
@@ -49,6 +51,7 @@ def generate_bests_image(data: models.DMBests) -> Image.Image:
     basic_start = (100, 688)
     new_start = (100, 3398)
     bmode_strip_box = (119, 36, 151, 468)
+    emblem_lt = (1029, 154)
 
     bg = Image.open(os.path.join(IMAGE_PATH, "bg.png"))
     draw = ImageDraw.Draw(bg)
@@ -61,13 +64,15 @@ def generate_bests_image(data: models.DMBests) -> Image.Image:
     djpower_desc = util.format_djpower_tier(djpower_tier, djpower_level)
     djpower_color = constants.DJPOWER_TIER_COLOR[djpower_tier]
 
-    if djpower_tier == "middleman" and random() < 0.1:
+    if random() < 0.1 and os.path.exists(os.path.join(EMBLEM_PATH, f"{djpower_tier}_0.png")): # Easter egg
         djpower_level = 0
-    else: # this is just a temporary solution and should be removed later
-        djpower_level = ""
 
-    emblem = Image.open(os.path.join(IMAGE_PATH, 'emblems', f"{djpower_tier}_{djpower_level}.png")).resize((370, 370))
-    bg.paste(emblem, (1034, 159))
+    if os.path.exists(os.path.join(EMBLEM_BG_PATH, f"{data.username}.png")):
+        emblem_bg = Image.open(os.path.join(EMBLEM_BG_PATH, f"{data.username}.png")).resize((380, 380))
+        bg.alpha_composite(emblem_bg, emblem_lt)
+
+    emblem = Image.open(os.path.join(EMBLEM_PATH, f"{djpower_tier}_{djpower_level}.png")).resize((380, 380))
+    bg.alpha_composite(emblem, emblem_lt)
     draw.rectangle(bmode_strip_box, fill=constants.BMODE_COLOR[data.bmode])
     draw.text((282, 370), data.bmode, font=font_bd, fill='white', anchor="ms")
     draw.text((1535, 212), data.username, font=font_rg, fill='white', anchor="lm")

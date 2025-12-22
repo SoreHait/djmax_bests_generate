@@ -8,9 +8,9 @@ def get_overridden_dlc_name(dlc_code: str, og_name: str) -> str:
 
 def get_djpower_tier(djpower: Decimal) -> tuple[str, int]:
     if djpower >= 9980:
-        return "lord", 0
+        return "lord", 1
     elif djpower < 500:
-        return "beginner", 0
+        return "beginner", 1
 
     for tier, threshold_list in constants.DJPOWER_TIER_MAP:
         for idx, threshold in enumerate(threshold_list):
