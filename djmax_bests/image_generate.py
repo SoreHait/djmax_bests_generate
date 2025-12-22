@@ -110,6 +110,4 @@ def generate_bests_image(data: models.DMBests) -> Image.Image:
     draw.text((375, 4616), ', '.join(constants.NEW_DLC), font=font_lt, fill='white', anchor="ls")
     draw.text((385, 4687), ", ".join(songdb.get_title(songid) for songid in constants.NEW_SONG), font=font_lt, fill='white', anchor="ls")
 
-    draw.text((1540, 4545), "Under Development | Not Final Version", font=font_lt, fill='white', anchor="ms")
-
     return bg
