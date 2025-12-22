@@ -3,9 +3,6 @@ from decimal import Decimal
 from PIL.ImageFont import FreeTypeFont
 
 
-def get_overridden_dlc_name(dlc_code: str, og_name: str) -> str:
-    return constants.DLC_NAME_OVERRIDE.get(dlc_code, og_name)
-
 def get_djpower_tier(djpower: Decimal) -> tuple[str, int]:
     if djpower >= 9980:
         return "lord", 1

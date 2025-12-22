@@ -9,6 +9,28 @@ IMAGE_PATH = os.path.join(os.path.dirname(__file__), "images")
 FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts")
 EMBLEM_PATH = os.path.join(IMAGE_PATH, "emblems")
 EMBLEM_BG_PATH = os.path.join(IMAGE_PATH, "emblem_bg")
+DIFF_STAR_PATH = os.path.join(IMAGE_PATH, "diff_stars")
+
+def assemble_diff_strip(pattern: str, level: int) -> Image.Image:
+    star_size = (25, 25)
+    strip_size = (star_size[0] * 15, star_size[1])
+    pattern_type = "sc" if pattern == "SC" else "nm"
+    stars = [
+        Image.open(os.path.join(DIFF_STAR_PATH, f"{pattern_type}_1.png")),
+        Image.open(os.path.join(DIFF_STAR_PATH, f"{pattern_type}_2.png")),
+        Image.open(os.path.join(DIFF_STAR_PATH, f"{pattern_type}_3.png")),
+        Image.open(os.path.join(DIFF_STAR_PATH, f"{pattern_type}_0.png")),
+    ]
+
+    strip = Image.new("RGBA", strip_size)
+    for i in range(15):
+        if i < level:
+            star_img = stars[i // 5]
+        else:
+            star_img = stars[3]
+        strip.paste(star_img, (i * star_size[0], 0))
+
+    return strip
 
 def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Image:
     overlay = Image.open(os.path.join(IMAGE_PATH, f"{type}_card.png"))
@@ -21,11 +43,8 @@ def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Imag
 
     font_bd = ImageFont.truetype(os.path.join(FONT_PATH, "Respect_bd.ttf"), 23)
     font_rg = ImageFont.truetype(os.path.join(FONT_PATH, "Respect_rg.ttf"), 30)
-    draw.text((10, 141), f"{song.pattern} {song.level}", font=font_bd, fill=constants.DIFF_COLOR[song.pattern], anchor="lm")
+    draw.text((10, 141), song.dlc_code, font=font_bd, fill=constants.DLC_COLOR.get(song.dlc_code, 'white'), anchor="lm")
     draw.text((165, 21), util.wrap_text(song.title, font_rg, 300), font=font_rg, fill='white', anchor="lm")
-
-    font_bd = font_bd.font_variant(size=24)
-    draw.text((165, 62), util.get_overridden_dlc_name(song.dlc_code, song.dlc), font=font_bd, fill=constants.DLC_COLOR.get(song.dlc_code, 'white'), anchor="lm")
 
     font_bd = font_bd.font_variant(size=30)
     draw.text((230, 95), f"{song.score:.2f}%", font=font_bd, fill='white', anchor="lm")
@@ -33,6 +52,9 @@ def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Imag
 
     font_bd = font_bd.font_variant(size=26)
     draw.text((516, 17), f"#{idx}", font=font_bd, fill="black" if type == "new" else "#333333", anchor="mm")
+
+    diff_strip = assemble_diff_strip(song.pattern, song.level)
+    bg.alpha_composite(diff_strip, (165, 52))
 
     mc_state = ""
     if song.score == Decimal("100.0"):
@@ -68,10 +90,10 @@ def generate_bests_image(data: models.DMBests) -> Image.Image:
         djpower_level = 0
 
     if os.path.exists(os.path.join(EMBLEM_BG_PATH, f"{data.username}.png")):
-        emblem_bg = Image.open(os.path.join(EMBLEM_BG_PATH, f"{data.username}.png")).resize((380, 380))
+        emblem_bg = Image.open(os.path.join(EMBLEM_BG_PATH, f"{data.username}.png"))
         bg.alpha_composite(emblem_bg, emblem_lt)
 
-    emblem = Image.open(os.path.join(EMBLEM_PATH, f"{djpower_tier}_{djpower_level}.png")).resize((380, 380))
+    emblem = Image.open(os.path.join(EMBLEM_PATH, f"{djpower_tier}_{djpower_level}.png"))
     bg.alpha_composite(emblem, emblem_lt)
     draw.rectangle(bmode_strip_box, fill=constants.BMODE_COLOR[data.bmode])
     draw.text((282, 370), data.bmode, font=font_bd, fill='white', anchor="ms")

@@ -14,7 +14,6 @@ class VAPattern(BaseModel):
     djpower: Decimal
     # rating: Decimal
     # updatedAt: str(date-like object) | None
-    dlc: str
     dlcCode: str
 
 class VAFloor(BaseModel):
@@ -36,7 +35,6 @@ class DMSong(BaseModel):
     score: Decimal
     maxCombo: int
     djpower: Decimal
-    dlc: str
     dlc_code: str
 
 class DMBests(BaseModel):
@@ -137,7 +135,6 @@ class DMBests(BaseModel):
                     score=pattern.score,
                     maxCombo=pattern.maxCombo,
                     djpower=pattern.djpower,
-                    dlc=pattern.dlc,
                     dlc_code=pattern.dlcCode
                 )
                 if util.is_new(dm_song.dlc_code, dm_song.songid):

@@ -20,13 +20,6 @@ BMODE_COLOR = {
     "8": "#8392ff"
 }
 
-DIFF_COLOR = {
-    "NM": "#F3B705",
-    "HD": "#EC5808",
-    "MX": "#F40440",
-    "SC": "#D10569"
-}
-
 DLC_COLOR = {
     "R": "#ffd250",
     "RV": "#ffd250",
@@ -68,29 +61,6 @@ DLC_COLOR = {
     "EZ2": "#00ecff",
     "GC": "#51eefe",
     "MD": "#fe3db3"
-}
-
-DLC_NAME_OVERRIDE = {
-    "VL": "V LIBERTY",
-    "VL2": "V LIBERTY 2",
-    "VL3": "V LIBERTY 3",
-    "VL4": "V LIBERTY 4",
-    "PLI1": "TRIBUTE #1",
-    "PLI2": "64514 Part.1",
-    "GG": "GUILTY GEAR",
-    "BA": "BLUE ARCHIVE",
-    "ESTI": "ESTIMATE",
-    "FAL": "FALCON",
-    "GF": "GIRLS' FRONTLINE",
-    "MAP": "MAPLESTORY",
-    "NXN": "NEXON",
-    "TEK": "TEKKEN",
-    "CHU": "CHUNITHM",
-    "CY": "CYTUS",
-    "DM": "DEEMO",
-    "EZ2": "EZ2ON",
-    "GC": "GROOVE COASTER",
-    "MD": "MUSE DASH"
 }
 
 DJPOWER_TIER_COLOR = {
