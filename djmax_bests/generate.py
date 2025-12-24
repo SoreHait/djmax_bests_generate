@@ -1,4 +1,4 @@
-from . import api_handler, image_generate, models
+from . import api_handler, bests_generate, models, scorelist_generate
 from PIL import Image
 
 
@@ -14,8 +14,8 @@ BOARD_LIST = ["SC", "MX", "11", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1
 def generate_bests(username: str, bmode: str) -> Image.Image:
     bests_data = models.DMBests(username=username, bmode=bmode, basic=[], new=[])
     for board in BOARD_LIST:
-        print(f"Fetching: {username} - {bmode}B - {board}")
-        next_bests_data = api_handler.fetch_board_data(username, bmode, board)
+        print(f"Fetching: {username} - {bmode}B - {board} (BESTS - NORMAL)")
+        next_bests_data = api_handler.fetch_bests(username, bmode, board)
         if next_bests_data.basic_max_djpower >= bests_data.basic_min_djpower or \
            next_bests_data.new_max_djpower >= bests_data.new_min_djpower:
             bests_data += next_bests_data
@@ -23,15 +23,21 @@ def generate_bests(username: str, bmode: str) -> Image.Image:
         else:
             break
 
-    return image_generate.generate_bests_image(bests_data)
+    return bests_generate.generate_bests_image(bests_data)
 
 # IF A PLAYER DO EXPERIENCE THE PROBLEM MENTIONED ABOVE,
 # USE THIS FUNCTION INSTEAD
 def generate_bests_all_boards(username: str, bmode: str) -> Image.Image:
     bests_data = models.DMBests(username=username, bmode=bmode, basic=[], new=[])
     for board in BOARD_LIST:
-        print(f"Fetching: {username} - {bmode}B - {board} (ALL BOARDS MODE)")
-        next_bests_data = api_handler.fetch_board_data(username, bmode, board)
+        print(f"Fetching: {username} - {bmode}B - {board} (BESTS - ALL BOARDS)")
+        next_bests_data = api_handler.fetch_bests(username, bmode, board)
         bests_data += next_bests_data
     bests_data.justify()
-    return image_generate.generate_bests_image(bests_data)
+    return bests_generate.generate_bests_image(bests_data)
+
+
+def generate_scorelist(username: str, bmode: str, is_sc: bool, level: int):# -> Image.Image
+    print(f"Fetching: {username} - {bmode}B - {'SC' if is_sc else ''}{level} (SCORELIST)")
+    score_list_data = api_handler.fetch_scorelist(username, bmode, is_sc, level)
+    return score_list_data

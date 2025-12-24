@@ -1,6 +1,8 @@
 from . import constants
 from decimal import Decimal
 from PIL.ImageFont import FreeTypeFont
+from PIL import Image
+import os
 
 
 def get_djpower_tier(djpower: Decimal) -> tuple[str, int]:
@@ -33,3 +35,33 @@ def wrap_text(text: str, font: FreeTypeFont, wrap_width: int) -> str:
 
 def is_new(dlc_code: str, songid: int) -> bool:
     return (dlc_code in constants.NEW_DLC) or (songid in constants.NEW_SONG)
+
+def get_mc_state(score: Decimal, max_combo: int) -> str:
+    mc_state = ""
+    if score == Decimal("100.0"):
+        mc_state = "PP"
+    elif max_combo:
+        mc_state = "MC"
+    return mc_state
+
+def assemble_diff_strip(pattern: str, level: int, diff_star_path: str) -> Image.Image:
+    pattern_type = "sc" if pattern == "SC" else "nm"
+    stars = [
+        Image.open(os.path.join(diff_star_path, f"{pattern_type}_1.png")),
+        Image.open(os.path.join(diff_star_path, f"{pattern_type}_2.png")),
+        Image.open(os.path.join(diff_star_path, f"{pattern_type}_3.png")),
+        Image.open(os.path.join(diff_star_path, f"{pattern_type}_0.png")),
+    ]
+
+    star_size = stars[0].size
+    strip_size = (star_size[0] * 15, star_size[1])
+
+    strip = Image.new("RGBA", strip_size)
+    for i in range(15):
+        if i < level:
+            star_img = stars[i // 5]
+        else:
+            star_img = stars[3]
+        strip.paste(star_img, (i * star_size[0], 0))
+
+    return strip

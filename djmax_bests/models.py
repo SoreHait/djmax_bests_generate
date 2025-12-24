@@ -1,6 +1,10 @@
 from pydantic import BaseModel, RootModel, Field
-from decimal import Decimal
+from decimal import Decimal, ROUND_FLOOR
 from . import constants, api_handler, util
+
+
+def cut_digits(num: Decimal, digit: int) -> Decimal:
+    return num.quantize(Decimal(f'0.{"0" * (digit - 1)}1'), rounding=ROUND_FLOOR)
 
 
 class VAPattern(BaseModel):
@@ -33,7 +37,7 @@ class DMSong(BaseModel):
     pattern: str # MX/SC...
     level: int
     score: Decimal
-    maxCombo: int
+    max_combo: int
     djpower: Decimal
     dlc_code: str
 
@@ -116,8 +120,8 @@ class DMBests(BaseModel):
             self.new = self.new[:30]
 
 
-    @staticmethod
-    def from_VAResponse(username: str, bmode: str, va_response: VAResponse) -> "DMBests":
+    @classmethod
+    def from_VAResponse(cls, username: str, bmode: str, va_response: VAResponse) -> "DMBests":
         song_db = api_handler.fetch_song_db()
         basic_songs = []
         new_songs = []
@@ -133,7 +137,7 @@ class DMBests(BaseModel):
                     pattern=pattern.pattern,
                     level=level,
                     score=pattern.score,
-                    maxCombo=pattern.maxCombo,
+                    max_combo=pattern.maxCombo,
                     djpower=pattern.djpower,
                     dlc_code=pattern.dlcCode
                 )
@@ -142,7 +146,73 @@ class DMBests(BaseModel):
                 else:
                     basic_songs.append(dm_song)
 
-        return DMBests(username=username, bmode=bmode, basic=basic_songs, new=new_songs)
+        return cls(username=username, bmode=bmode, basic=basic_songs, new=new_songs)
+
+class DMSongSimple(BaseModel):
+    songid: int
+    pattern: str
+    score: Decimal | None
+    max_combo: int
+    dlc_code: str
+
+class DMScorelist(BaseModel):
+    username: str
+    bmode: str
+    is_sc: bool
+    level: int
+    scores: list[DMSongSimple]
+
+    @property
+    def is_diff_unified(self) -> bool:
+        return all(song.pattern == self.scores[0].pattern for song in self.scores)
+
+    @property
+    def avg_score(self) -> Decimal:
+        if not self.scores:
+            return Decimal(0)
+        score_sum = Decimal(0)
+        count = 0
+        for song in self.scores:
+            if song.score is not None and song.score > Decimal(0):
+                score_sum += song.score
+                count += 1
+        if count == 0:
+            return Decimal(0)
+        return cut_digits(score_sum / count, 2)
+
+    @property
+    def completion_rate(self) -> Decimal:
+        if not self.scores:
+            return Decimal(0)
+        score_sum = Decimal(0)
+        count = 0
+        for song in self.scores:
+            score_sum += song.score if song.score is not None else Decimal(0)
+            count += 1
+        if count == 0:
+            return Decimal(0)
+        return cut_digits(score_sum / count, 2)
+
+    @classmethod
+    def from_VAResponse(cls, username: str, bmode: str, is_sc: bool, level: int, va_response: VAResponse) -> "DMScorelist":
+        song_db = api_handler.fetch_song_db()
+        scores = []
+
+        for floor in va_response.floors:
+            for pattern in floor.patterns:
+                _level = song_db.get_level(pattern.title, bmode, pattern.pattern)
+                if _level != level:
+                    continue
+                dm_song_simple = DMSongSimple(
+                    songid=pattern.title,
+                    pattern=pattern.pattern,
+                    score=pattern.score,
+                    max_combo=pattern.maxCombo if pattern.maxCombo is not None else 0,
+                    dlc_code=pattern.dlcCode
+                )
+                scores.append(dm_song_simple)
+
+        return cls(username=username, bmode=bmode, is_sc=is_sc, level=level, scores=scores)
 
 class DMSongDBDiff(BaseModel):
     level: int

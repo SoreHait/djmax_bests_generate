@@ -32,15 +32,28 @@ def get_cover(songid: int) -> Image.Image:
 
 
 def build_board_req_url(username: str, bmode: str, board: str) -> str:
-    base_url = f"https://v-archive.net/api/archive/{username}/board/{bmode}/{board}"
-    return base_url
+    return f"https://v-archive.net/api/archive/{username}/board/{bmode}/{board}"
 
-def fetch_board_data(username: str, bmode: str, board: str) -> models.DMBests:
+def fetch_bests(username: str, bmode: str, board: str) -> models.DMBests:
     url = build_board_req_url(username, bmode, board)
     response = requests.get(url)
     response.raise_for_status()
     va_resp = models.VAResponse.model_validate_json(response.text)
     return models.DMBests.from_VAResponse(username, bmode, va_resp)
+
+def fetch_scorelist(username: str, bmode: str, is_sc: bool, level: int) -> models.DMScorelist:
+    board = None
+    if is_sc:
+        board = "SC"
+    elif 12 <= level <= 15:
+        board = "MX"
+    else:
+        board = str(level)
+    url = build_board_req_url(username, bmode, board)
+    response = requests.get(url)
+    response.raise_for_status()
+    va_resp = models.VAResponse.model_validate_json(response.text)
+    return models.DMScorelist.from_VAResponse(username, bmode, is_sc, level, va_resp)
 
 
 def fetch_song_db() -> models.DMSongDB:

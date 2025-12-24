@@ -1,36 +1,14 @@
 from PIL import Image, ImageDraw, ImageFont
 import os
 from . import models, constants, api_handler, util
-from decimal import Decimal
 from random import random
 
 
-IMAGE_PATH = os.path.join(os.path.dirname(__file__), "images")
+IMAGE_PATH = os.path.join(os.path.dirname(__file__), "images", "bests")
 FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts")
 EMBLEM_PATH = os.path.join(IMAGE_PATH, "emblems")
 EMBLEM_BG_PATH = os.path.join(IMAGE_PATH, "emblem_bg")
 DIFF_STAR_PATH = os.path.join(IMAGE_PATH, "diff_stars")
-
-def assemble_diff_strip(pattern: str, level: int) -> Image.Image:
-    star_size = (25, 25)
-    strip_size = (star_size[0] * 15, star_size[1])
-    pattern_type = "sc" if pattern == "SC" else "nm"
-    stars = [
-        Image.open(os.path.join(DIFF_STAR_PATH, f"{pattern_type}_1.png")),
-        Image.open(os.path.join(DIFF_STAR_PATH, f"{pattern_type}_2.png")),
-        Image.open(os.path.join(DIFF_STAR_PATH, f"{pattern_type}_3.png")),
-        Image.open(os.path.join(DIFF_STAR_PATH, f"{pattern_type}_0.png")),
-    ]
-
-    strip = Image.new("RGBA", strip_size)
-    for i in range(15):
-        if i < level:
-            star_img = stars[i // 5]
-        else:
-            star_img = stars[3]
-        strip.paste(star_img, (i * star_size[0], 0))
-
-    return strip
 
 def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Image:
     overlay = Image.open(os.path.join(IMAGE_PATH, f"{type}_card.png"))
@@ -53,16 +31,10 @@ def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Imag
     font_bd = font_bd.font_variant(size=26)
     draw.text((516, 17), f"#{idx}", font=font_bd, fill="black" if type == "new" else "#333333", anchor="mm")
 
-    diff_strip = assemble_diff_strip(song.pattern, song.level)
+    diff_strip = util.assemble_diff_strip(song.pattern, song.level, DIFF_STAR_PATH)
     bg.alpha_composite(diff_strip, (165, 52))
 
-    mc_state = ""
-    if song.score == Decimal("100.0"):
-        mc_state = "PP"
-    elif song.maxCombo:
-        mc_state = "MC"
-
-    if mc_state:
+    if (mc_state := util.get_mc_state(song.score, song.max_combo)):
         mc_overlay = Image.open(os.path.join(IMAGE_PATH, f"{mc_state}.png"))
         bg.alpha_composite(mc_overlay)
 
