@@ -12,7 +12,7 @@ class VAPattern(BaseModel):
     name: str
     # composer: str
     pattern: str
-    # scFloor: str
+    scFloor: Decimal | None = None
     score: Decimal | None
     maxCombo: int | None
     djpower: Decimal
@@ -21,7 +21,7 @@ class VAPattern(BaseModel):
     dlcCode: str
 
 class VAFloor(BaseModel):
-    # floorNumber: int
+    floorNumber: Decimal
     patterns: list[VAPattern]
 
 class VAResponse(BaseModel):
@@ -111,7 +111,7 @@ class DMBests(BaseModel):
         combined_new = self.new + other.new
         return DMBests(username=self.username, bmode=self.bmode, basic=combined_basic, new=combined_new)
 
-    def justify(self):
+    def organize(self):
         self.basic.sort(key=lambda song: song.djpower, reverse=True)
         self.new.sort(key=lambda song: song.djpower, reverse=True)
         if self.basic_len > 70:
@@ -155,54 +155,77 @@ class DMSongSimple(BaseModel):
     max_combo: int
     dlc_code: str
 
+class DMScorelistFloor(BaseModel):
+    floor_constant: Decimal
+    entries: list[DMSongSimple]
+
 class DMScorelist(BaseModel):
     username: str
     bmode: str
     is_sc: bool
     level: int
-    scores: list[DMSongSimple]
+    floors: list[DMScorelistFloor]
 
     @property
     def is_diff_unified(self) -> bool:
-        return all(song.pattern == self.scores[0].pattern for song in self.scores)
+        pattern = self.floors[0].entries[0].pattern
+        for floor in self.floors:
+            for entry in floor.entries:
+                if entry.pattern != pattern:
+                    return False
+        return True
 
     @property
     def avg_score(self) -> Decimal:
-        if not self.scores:
+        if not self.floors:
             return Decimal(0)
         score_sum = Decimal(0)
         count = 0
-        for song in self.scores:
-            if song.score is not None and song.score > Decimal(0):
-                score_sum += song.score
-                count += 1
+        for floor in self.floors:
+            for entry in floor.entries:
+                if entry.score is not None and entry.score > Decimal(0):
+                    score_sum += entry.score
+                    count += 1
         if count == 0:
             return Decimal(0)
         return cut_digits(score_sum / count, 2)
 
     @property
     def completion_rate(self) -> Decimal:
-        if not self.scores:
+        if not self.floors:
             return Decimal(0)
         score_sum = Decimal(0)
         count = 0
-        for song in self.scores:
-            score_sum += song.score if song.score is not None else Decimal(0)
-            count += 1
+        for floor in self.floors:
+            for entry in floor.entries:
+                score_sum += entry.score if entry.score is not None else Decimal(0)
+                count += 1
         if count == 0:
             return Decimal(0)
         return cut_digits(score_sum / count, 2)
 
+
+    def organize(self):
+        self.floors.sort(key=lambda floor: floor.floor_constant, reverse=True)
+        for floor in self.floors:
+            floor.entries.sort(key=lambda entry: entry.score if entry.score is not None else Decimal(0), reverse=True)
+
+
     @classmethod
     def from_VAResponse(cls, username: str, bmode: str, is_sc: bool, level: int, va_response: VAResponse) -> "DMScorelist":
         song_db = api_handler.fetch_song_db()
-        scores = []
+        floors: list[DMScorelistFloor] = []
 
         for floor in va_response.floors:
             for pattern in floor.patterns:
                 _level = song_db.get_level(pattern.title, bmode, pattern.pattern)
                 if _level != level:
                     continue
+                floor_constant = None
+                if is_sc and pattern.scFloor is not None:
+                    floor_constant = pattern.scFloor
+                else:
+                    floor_constant = floor.floorNumber
                 dm_song_simple = DMSongSimple(
                     songid=pattern.title,
                     pattern=pattern.pattern,
@@ -210,9 +233,18 @@ class DMScorelist(BaseModel):
                     max_combo=pattern.maxCombo if pattern.maxCombo is not None else 0,
                     dlc_code=pattern.dlcCode
                 )
-                scores.append(dm_song_simple)
+                for _floor in floors:
+                    if _floor.floor_constant == floor_constant:
+                        _floor.entries.append(dm_song_simple)
+                        break
+                else:
+                    new_floor = DMScorelistFloor(
+                        floor_constant=floor_constant,
+                        entries=[dm_song_simple]
+                    )
+                    floors.append(new_floor)
 
-        return cls(username=username, bmode=bmode, is_sc=is_sc, level=level, scores=scores)
+        return cls(username=username, bmode=bmode, is_sc=is_sc, level=level, floors=floors)
 
 class DMSongDBDiff(BaseModel):
     level: int

@@ -19,7 +19,7 @@ def generate_bests(username: str, bmode: str) -> Image.Image:
         if next_bests_data.basic_max_djpower >= bests_data.basic_min_djpower or \
            next_bests_data.new_max_djpower >= bests_data.new_min_djpower:
             bests_data += next_bests_data
-            bests_data.justify()
+            bests_data.organize()
         else:
             break
 
@@ -33,11 +33,12 @@ def generate_bests_all_boards(username: str, bmode: str) -> Image.Image:
         print(f"Fetching: {username} - {bmode}B - {board} (BESTS - ALL BOARDS)")
         next_bests_data = api_handler.fetch_bests(username, bmode, board)
         bests_data += next_bests_data
-    bests_data.justify()
+    bests_data.organize()
     return bests_generate.generate_bests_image(bests_data)
 
 
 def generate_scorelist(username: str, bmode: str, is_sc: bool, level: int):# -> Image.Image
     print(f"Fetching: {username} - {bmode}B - {'SC' if is_sc else ''}{level} (SCORELIST)")
     score_list_data = api_handler.fetch_scorelist(username, bmode, is_sc, level)
+    score_list_data.organize()
     return score_list_data
