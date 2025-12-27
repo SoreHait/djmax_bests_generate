@@ -31,7 +31,8 @@ def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Imag
     font_bd = font_bd.font_variant(size=26)
     draw.text((516, 17), f"#{idx}", font=font_bd, fill="black" if type == "new" else "#333333", anchor="mm")
 
-    diff_strip = util.assemble_diff_strip(song.pattern, song.level, DIFF_STAR_PATH)
+    is_sc = song.pattern == "SC"
+    diff_strip = util.assemble_diff_strip(is_sc, song.level, DIFF_STAR_PATH)
     bg.alpha_composite(diff_strip, (165, 52))
 
     if (mc_state := util.get_mc_state(song.score, song.max_combo)):

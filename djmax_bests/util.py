@@ -44,8 +44,8 @@ def get_mc_state(score: Decimal | None, max_combo: int | None) -> str | None:
         mc_state = "MC"
     return mc_state
 
-def assemble_diff_strip(pattern: str, level: int, diff_star_path: str) -> Image.Image:
-    pattern_type = "sc" if pattern == "SC" else "nm"
+def assemble_diff_strip(is_sc: bool, level: int, diff_star_path: str) -> Image.Image:
+    pattern_type = "sc" if is_sc else "nm"
     stars = [
         Image.open(os.path.join(diff_star_path, f"{pattern_type}_1.png")),
         Image.open(os.path.join(diff_star_path, f"{pattern_type}_2.png")),

@@ -211,6 +211,34 @@ class DMScorelist(BaseModel):
         pattern_count = self.count_patterns
         return max(pattern_count.items(), key=lambda item: item[1])[0]
 
+    @property
+    def count_99_97(self) -> tuple[int, int]:
+        count_99 = 0
+        count_97 = 0
+        for floor in self.floors:
+            for entry in floor.songs:
+                if entry.score is None:
+                    continue
+                if entry.score >= Decimal("99.00"):
+                    count_99 += 1
+                elif entry.score >= Decimal("97.00"):
+                    count_97 += 1
+        return count_99, count_97
+
+    @property
+    def count_mc_pp(self) -> tuple[int, int]:
+        count_mc = 0
+        count_pp = 0
+        for floor in self.floors:
+            for entry in floor.songs:
+                if entry.max_combo is None or entry.score is None:
+                    continue
+                if entry.score == Decimal("100.00"):
+                    count_pp += 1
+                elif entry.max_combo:
+                    count_mc += 1
+        return count_mc, count_pp
+
 
     def organize(self):
         self.floors.sort(key=lambda floor: floor.floor_constant, reverse=True)
