@@ -1,9 +1,15 @@
-# DJMAX TOP 100 IMAGE GENERATOR
+# DJMAX Score Image Generator
 
-the only function you should care: `generate.generate_bests(...)`
+The **ONLY** module you should care: `djmax_bests.generate`.
 
-this library connects to v-archive as data source
+This library connects to v-archive as data source.
 
-also read the comments above that function and maybe adapt the alternative function as needed
+## Top 100 Generator
 
-but it will dramatically extend the data fetching time because it will fetch all scores instead of fetching top boards
+`generate.generate_bests`: returns a `PIL.Image` with the provided username and button mode (4568). Could be inaccurate in certain circumstances (read the comments for accurate reason).
+
+`generate.generate_bests_all_boards`: an alternative solution to address that issue.
+
+## Scorelist Generator
+
+`generate.generate_scorelist`: returns a `PIL.Image` with the provided username and button mode (4568) of a certain level. Pass in a bool `is_sc` to indicate whether the `level` is in SC levels.
