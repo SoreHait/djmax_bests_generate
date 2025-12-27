@@ -11,7 +11,7 @@ DIFF_STAR_PATH = os.path.join(IMAGE_PATH, "diff_stars")
 def generate_single_song(draw_pattern_text: bool, song: models.DMSongSimple) -> Image.Image:
     bg = Image.new("RGBA", (160, 200))
     draw = ImageDraw.Draw(bg)
-    font_bd = ImageFont.truetype(os.path.join(FONT_PATH, "Respect_bd.ttf"), 30)
+    font_bd = ImageFont.truetype(os.path.join(FONT_PATH, "Respect_bd.ttf"), 26)
 
     cover = api_handler.get_cover(song.songid)
     cover = cover.resize((160, 160))
@@ -23,6 +23,7 @@ def generate_single_song(draw_pattern_text: bool, song: models.DMSongSimple) -> 
     if draw_pattern_text:
         draw.text((152, 152), song.pattern, font=font_bd, fill=constants.DIFF_COLOR[song.pattern], anchor="rs")
 
+    font_bd = font_bd.font_variant(size=30)
     draw.text((80, 178), f"{song.score}%" if song.score is not None else "N/P", font=font_bd, fill='white', anchor="mm")
 
     return bg
@@ -75,7 +76,7 @@ def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
 
     # Grand header
     draw.rectangle(bmode_strip_box, fill=constants.BMODE_COLOR[data.bmode])
-    draw.text((190, 357), data.bmode, fill='white', anchor='ms', font=font_bd)
+    draw.text((193, 357), data.bmode, fill='white', anchor='ms', font=font_bd)
     draw.text((873, 165), data.username, fill='white', anchor='lm', font=font_rg)
 
     star_strip = util.assemble_diff_strip(data.is_sc, data.level, DIFF_STAR_PATH)
