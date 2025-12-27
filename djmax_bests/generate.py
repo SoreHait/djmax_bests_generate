@@ -37,8 +37,8 @@ def generate_bests_all_boards(username: str, bmode: str) -> Image.Image:
     return bests_generate.generate_bests_image(bests_data)
 
 
-def generate_scorelist(username: str, bmode: str, is_sc: bool, level: int):# -> Image.Image
+def generate_scorelist(username: str, bmode: str, is_sc: bool, level: int) -> Image.Image:
     print(f"Fetching: {username} - {bmode}B - {'SC' if is_sc else ''}{level} (SCORELIST)")
-    score_list_data = api_handler.fetch_scorelist(username, bmode, is_sc, level)
-    score_list_data.organize()
-    return score_list_data
+    scorelist_data = api_handler.fetch_scorelist(username, bmode, is_sc, level)
+    scorelist_data.organize()
+    return scorelist_generate.generate_scorelist_image(scorelist_data)

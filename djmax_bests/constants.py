@@ -20,6 +20,13 @@ BMODE_COLOR = {
     "8": "#8392ff"
 }
 
+DIFF_COLOR = {
+    "NM": "#F3B705",
+    "HD": "#EC5808",
+    "MX": "#F40440",
+    "SC": "#D10569"
+}
+
 DLC_COLOR = {
     "R": "#ffd250",
     "RV": "#ffd250",

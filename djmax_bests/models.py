@@ -91,11 +91,11 @@ class DMBests(BaseModel):
 
     @property
     def total_basic_djpower(self) -> Decimal:
-        return self.total_basic_djpower_raw * constants.CONVERT_CONSTANT[self.bmode]
+        return cut_digits(self.total_basic_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
 
     @property
     def total_new_djpower(self) -> Decimal:
-        return self.total_new_djpower_raw * constants.CONVERT_CONSTANT[self.bmode]
+        return cut_digits(self.total_new_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
 
     @property
     def total_djpower_raw(self) -> Decimal:
@@ -103,7 +103,7 @@ class DMBests(BaseModel):
 
     @property
     def total_djpower(self) -> Decimal:
-        return self.total_basic_djpower + self.total_new_djpower
+        return cut_digits(self.total_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
 
 
     def __add__(self, other: "DMBests") -> "DMBests":
@@ -152,12 +152,12 @@ class DMSongSimple(BaseModel):
     songid: int
     pattern: str
     score: Decimal | None
-    max_combo: int
+    max_combo: int | None
     dlc_code: str
 
 class DMScorelistFloor(BaseModel):
     floor_constant: Decimal
-    entries: list[DMSongSimple]
+    songs: list[DMSongSimple]
 
 class DMScorelist(BaseModel):
     username: str
@@ -167,22 +167,13 @@ class DMScorelist(BaseModel):
     floors: list[DMScorelistFloor]
 
     @property
-    def is_diff_unified(self) -> bool:
-        pattern = self.floors[0].entries[0].pattern
-        for floor in self.floors:
-            for entry in floor.entries:
-                if entry.pattern != pattern:
-                    return False
-        return True
-
-    @property
     def avg_score(self) -> Decimal:
         if not self.floors:
             return Decimal(0)
         score_sum = Decimal(0)
         count = 0
         for floor in self.floors:
-            for entry in floor.entries:
+            for entry in floor.songs:
                 if entry.score is not None and entry.score > Decimal(0):
                     score_sum += entry.score
                     count += 1
@@ -197,18 +188,34 @@ class DMScorelist(BaseModel):
         score_sum = Decimal(0)
         count = 0
         for floor in self.floors:
-            for entry in floor.entries:
+            for entry in floor.songs:
                 score_sum += entry.score if entry.score is not None else Decimal(0)
                 count += 1
         if count == 0:
             return Decimal(0)
         return cut_digits(score_sum / count, 2)
 
+    @property
+    def count_patterns(self) -> dict[str, int]:
+        pattern_count: dict[str, int] = {}
+        for floor in self.floors:
+            for entry in floor.songs:
+                if entry.pattern in pattern_count:
+                    pattern_count[entry.pattern] += 1
+                else:
+                    pattern_count[entry.pattern] = 1
+        return pattern_count
+
+    @property
+    def most_occurred_pattern(self) -> str:
+        pattern_count = self.count_patterns
+        return max(pattern_count.items(), key=lambda item: item[1])[0]
+
 
     def organize(self):
         self.floors.sort(key=lambda floor: floor.floor_constant, reverse=True)
         for floor in self.floors:
-            floor.entries.sort(key=lambda entry: entry.score if entry.score is not None else Decimal(0), reverse=True)
+            floor.songs.sort(key=lambda entry: entry.score if entry.score is not None else Decimal(0), reverse=True)
 
 
     @classmethod
@@ -230,17 +237,17 @@ class DMScorelist(BaseModel):
                     songid=pattern.title,
                     pattern=pattern.pattern,
                     score=pattern.score,
-                    max_combo=pattern.maxCombo if pattern.maxCombo is not None else 0,
+                    max_combo=pattern.maxCombo,
                     dlc_code=pattern.dlcCode
                 )
                 for _floor in floors:
                     if _floor.floor_constant == floor_constant:
-                        _floor.entries.append(dm_song_simple)
+                        _floor.songs.append(dm_song_simple)
                         break
                 else:
                     new_floor = DMScorelistFloor(
                         floor_constant=floor_constant,
-                        entries=[dm_song_simple]
+                        songs=[dm_song_simple]
                     )
                     floors.append(new_floor)
 
