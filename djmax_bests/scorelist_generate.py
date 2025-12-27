@@ -19,11 +19,11 @@ def generate_single_song(draw_pattern_text: bool, song: models.DMSongSimple) -> 
     overlay = Image.open(os.path.join(IMAGE_PATH, "card.png"))
     bg.alpha_composite(overlay)
 
-    draw.text((10, 141), song.dlc_code, font=font_bd, fill=constants.DLC_COLOR.get(song.dlc_code, 'white'), anchor="lm")
+    draw.text((8, 152), song.dlc_code, font=font_bd, fill=constants.DLC_COLOR.get(song.dlc_code, 'white'), anchor="ls")
     if draw_pattern_text:
-        draw.text((150, 141), song.pattern, font=font_bd, fill=constants.DIFF_COLOR[song.pattern], anchor="rm")
+        draw.text((152, 152), song.pattern, font=font_bd, fill=constants.DIFF_COLOR[song.pattern], anchor="rs")
 
-    draw.text((80, 179), f"{song.score}%" if song.score is not None else "N/P", font=font_bd, fill='white', anchor="mm")
+    draw.text((80, 178), f"{song.score}%" if song.score is not None else "N/P", font=font_bd, fill='white', anchor="mm")
 
     return bg
 
