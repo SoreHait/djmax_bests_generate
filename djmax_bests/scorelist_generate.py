@@ -40,8 +40,8 @@ def assemble_background(height: int) -> Image.Image:
         bg.paste(loop, (0, pasted_height))
         pasted_height += loop.height
 
-    draw = ImageDraw.Draw(bg)
-    draw.rectangle([(0, height - 20), (2200, height)], fill='#1c1c1c')
+    footer = Image.open(os.path.join(IMAGE_PATH, "footer.png"))
+    bg.alpha_composite(footer, (0, height - footer.height))
 
     return bg
 
@@ -159,9 +159,5 @@ def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
 
     # composite overlay at once
     bg.alpha_composite(overlay)
-
-    # Footer
-    footer = Image.open(os.path.join(IMAGE_PATH, "footer.png"))
-    bg.alpha_composite(footer, (0, total_height - footer.height))
 
     return bg
