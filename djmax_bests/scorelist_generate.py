@@ -53,7 +53,7 @@ def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
     l_space = 310
     t_space = 536
     r_space = 110
-    b_space = 142
+    b_space = 94
     card_size = (160, 200)
     mc_img_size = (60, 60)
     mc_pos_offset = (-12, 12)
@@ -129,21 +129,33 @@ def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
     overlay = Image.new("RGBA", (total_width, total_height))
     y_offset = t_space
     x_offset = l_space
-    for floor in data.floors:
+    for f_idx, floor in enumerate(data.floors):
         draw.rectangle([(l_space, y_offset), (total_width - r_space, y_offset + group_sep_height - 1)], fill='white')
         y_offset += group_sep_height + card_gap
 
         if floor.floor_constant > 0:
-            draw.text((l_space - 20, y_offset), str(floor.floor_constant), fill='white', anchor='rt', font=font_bd)
-            draw.text((l_space - 20, y_offset + 85), "SC Equivalent", fill='white', anchor='rt', font=font_rg)
+            if data.is_sc:
+                scaled = floor.floor_constant * 10
+                integer = scaled // 10
+                decimal = scaled % 10
+                constant_offset = int((integer - data.level) * 3 + (decimal - 1))
+                draw.text((l_space - 20, y_offset), "0" if constant_offset == 0 else f"{constant_offset:+}", fill='white', anchor='rt', font=font_bd)
+                if constant_offset == 0:
+                    draw.text((l_space - 20, y_offset + 85), "Baseline", fill='white', anchor='rt', font=font_rg)
+                elif constant_offset == 1:
+                    draw.multiline_text((l_space - 20, y_offset + 85), "Difficulty\nCompared to Baseline", fill='white', anchor='ra', font=font_rg, align='right')
+            else:
+                draw.text((l_space - 20, y_offset), str(floor.floor_constant), fill='white', anchor='rt', font=font_bd)
+                if f_idx == 0:
+                    draw.multiline_text((l_space - 20, y_offset + 85), "SC Equivalent\nApprox. Level in SC", fill='white', anchor='ra', font=font_rg, align='right')
         else:
             draw.text((l_space - 20, y_offset), "N/A", fill='white', anchor='rt', font=font_bd)
-            draw.text((l_space - 20, y_offset + 85), "Lower than SC1", fill='white', anchor='rt', font=font_rg)
+            draw.text((l_space - 20, y_offset + 85), "No SC Equiv. Level", fill='white', anchor='rt', font=font_rg)
 
-        for idx, song in enumerate(floor.songs):
+        for s_idx, song in enumerate(floor.songs):
             need_pattern_text = song.pattern != most_occurred_pattern
             card_image = generate_single_song(need_pattern_text, song)
-            if idx % layout_width == 0 and idx != 0:
+            if s_idx % layout_width == 0 and s_idx != 0:
                 x_offset = l_space
                 y_offset += card_size[1] + card_gap
             overlay.paste(card_image, (x_offset, y_offset))
