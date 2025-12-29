@@ -24,7 +24,7 @@ def generate_single_song(draw_pattern_text: bool, song: models.DMSongSimple) -> 
         draw.text((152, 152), song.pattern, font=font_bd, fill=constants.DIFF_COLOR[song.pattern], anchor="rs")
 
     font_bd = font_bd.font_variant(size=30)
-    draw.text((80, 178), f"{song.score}%" if song.score is not None else "N/P", font=font_bd, fill='white', anchor="mm")
+    draw.text((80, 178), f"{song.score}%" if song.score is not None else "N/P", font=font_bd, fill='white' if song.score is not None else 'gray', anchor="mm")
 
     return bg
 
@@ -67,7 +67,8 @@ def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
         floor_height = (len(floor.songs) - 1) // layout_width + 1
         total_height += group_sep_height + card_gap + floor_height * (card_size[1] + card_gap)
     mc_pos_offset = (card_size[0] - mc_img_size[0] // 2 + mc_pos_offset[0], 0 - mc_img_size[1] // 2 + mc_pos_offset[1])
-    most_occurred_pattern = data.most_occurred_pattern
+    main_pattern = "SC" if data.is_sc else ["NM", "HD", "MX"][(data.level - 1) // 5]
+    sc_tier = str((data.level - 1) // 5) if data.is_sc else ""
 
     bg = assemble_background(total_height)
     draw = ImageDraw.Draw(bg)
@@ -82,7 +83,7 @@ def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
     star_strip = util.assemble_diff_strip(data.is_sc, data.level, DIFF_STAR_PATH)
     bg.alpha_composite(star_strip, (868, 231))
     font_bd = font_bd.font_variant(size=70)
-    draw.text((868 + star_strip.width + 20, 228 + star_strip.height // 2), f"{most_occurred_pattern}{data.level}", fill=constants.DIFF_COLOR[most_occurred_pattern], anchor='lm', font=font_bd)
+    draw.text((868 + star_strip.width + 20, 228 + star_strip.height // 2), f"{main_pattern}{data.level}", fill=constants.DIFF_COLOR[main_pattern + sc_tier], anchor='lm', font=font_bd)
 
     current_x = 1210
     font_bd = font_bd.font_variant(size=60)
@@ -126,34 +127,39 @@ def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
     # Song section
     font_rg = font_rg.font_variant(size=24)
     font_bd = font_bd.font_variant(size=100)
+    font_bd_s = font_bd.font_variant(size=70)
     overlay = Image.new("RGBA", (total_width, total_height))
     y_offset = t_space
     x_offset = l_space
-    for f_idx, floor in enumerate(data.floors):
+    for floor in data.floors:
         draw.rectangle([(l_space, y_offset), (total_width - r_space, y_offset + group_sep_height - 1)], fill='white')
         y_offset += group_sep_height + card_gap
 
         if floor.floor_constant > 0:
+            scaled = floor.floor_constant * 10
+            integer = scaled // 10
+            decimal = scaled % 10
             if data.is_sc:
-                scaled = floor.floor_constant * 10
-                integer = scaled // 10
-                decimal = scaled % 10
                 constant_offset = int((integer - data.level) * 3 + (decimal - 1))
                 draw.text((l_space - 20, y_offset), "0" if constant_offset == 0 else f"{constant_offset:+}", fill='white', anchor='rt', font=font_bd)
                 if constant_offset == 0:
-                    draw.text((l_space - 20, y_offset + 85), "Baseline", fill='white', anchor='rt', font=font_rg)
+                    draw.text((l_space - 20, y_offset + 85), "Baseline", fill='white', anchor='ra', font=font_rg)
                 elif constant_offset == 1:
-                    draw.multiline_text((l_space - 20, y_offset + 85), "Difficulty\nCompared to Baseline", fill='white', anchor='ra', font=font_rg, align='right')
+                    draw.multiline_text((l_space - 20, y_offset + 85), "Relative Difficulty\nCompared to Baseline", fill='white', anchor='ra', font=font_rg, align='right')
+                elif integer != data.level and decimal == 1:
+                    draw.text((l_space - 20, y_offset + 85), f"SC{integer} Baseline", fill='white', anchor='ra', font=font_rg)
+                elif integer != data.level and decimal == 3:
+                    draw.text((l_space - 20, y_offset + 85), f"SC{integer} +2", fill='white', anchor='ra', font=font_rg)
             else:
-                draw.text((l_space - 20, y_offset), str(floor.floor_constant), fill='white', anchor='rt', font=font_bd)
-                if f_idx == 0:
-                    draw.multiline_text((l_space - 20, y_offset + 85), "SC Equivalent\nApprox. Level in SC", fill='white', anchor='ra', font=font_rg, align='right')
+                constant_offset = int(decimal - 1)
+                draw.text((l_space - 20, y_offset), f"SC{integer}", fill='white', anchor='rt', font=font_bd)
+                draw.text((l_space - 20, y_offset + 85), f"+{constant_offset}", fill='white', anchor='ra', font=font_bd_s)
+
         else:
             draw.text((l_space - 20, y_offset), "N/A", fill='white', anchor='rt', font=font_bd)
-            draw.text((l_space - 20, y_offset + 85), "No SC Equiv. Level", fill='white', anchor='rt', font=font_rg)
 
         for s_idx, song in enumerate(floor.songs):
-            need_pattern_text = song.pattern != most_occurred_pattern
+            need_pattern_text = song.pattern != main_pattern
             card_image = generate_single_song(need_pattern_text, song)
             if s_idx % layout_width == 0 and s_idx != 0:
                 x_offset = l_space

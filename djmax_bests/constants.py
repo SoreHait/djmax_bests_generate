@@ -21,10 +21,12 @@ BMODE_COLOR = {
 }
 
 DIFF_COLOR = {
-    "NM": "#F3B705",
-    "HD": "#EC5808",
-    "MX": "#F40440",
-    "SC": "#D10569"
+    "NM": "#f4bb00",
+    "HD": "#f45c00",
+    "MX": "#f40052",
+    "SC0": "#e00075",
+    "SC1": "#c404e1",
+    "SC2": "#3d66ff"
 }
 
 DLC_COLOR = {

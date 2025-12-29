@@ -207,11 +207,6 @@ class DMScorelist(BaseModel):
         return pattern_count
 
     @property
-    def most_occurred_pattern(self) -> str:
-        pattern_count = self.count_patterns
-        return max(pattern_count.items(), key=lambda item: item[1])[0]
-
-    @property
     def count_99_97(self) -> tuple[int, int]:
         count_99 = 0
         count_97 = 0
