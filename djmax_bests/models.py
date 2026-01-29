@@ -141,7 +141,10 @@ class DMBests(BaseModel):
 
     @property
     def total_djpower(self) -> Decimal:
-        return util.cut_digits(self.total_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
+        ret_val = util.cut_digits(self.total_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
+        if ret_val > Decimal("10000.0000"):
+            return Decimal("10000.0000")
+        return ret_val
 
 
     def __add__(self, other: "DMBests") -> "DMBests":

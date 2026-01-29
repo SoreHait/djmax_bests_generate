@@ -77,7 +77,10 @@ def generate_bests_image(data: models.DMBests, is_max: bool = False) -> Image.Im
     font_bd = font_bd.font_variant(size=64)
     draw.text((1535, 306), djpower_desc, font=font_bd, fill=djpower_color, anchor="lm")
     font_rg = font_rg.font_variant(size=120)
-    draw.text((1535, 400), f"{data.total_djpower:.4f}", font=font_rg, fill='white', anchor="lm")
+    if is_max:
+        draw.text((1535, 400), f"10000.0000", font=font_rg, fill='white', anchor="lm")
+    else:
+        draw.text((1535, 400), f"{data.total_djpower:.4f}", font=font_rg, fill='white', anchor="lm")
     font_rg = font_rg.font_variant(size=42)
     draw.text((1795, 489), f"{data.total_djpower_raw:.4f}", font=font_rg, fill='white', anchor="lm")
 
