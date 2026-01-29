@@ -1,8 +1,9 @@
-from . import constants
-from decimal import Decimal
-from PIL.ImageFont import FreeTypeFont
-from PIL import Image
 import os
+from decimal import ROUND_FLOOR, Decimal
+from PIL import Image
+from PIL.ImageFont import FreeTypeFont
+
+from . import constants
 
 
 def get_djpower_tier(djpower: Decimal) -> tuple[str, int]:
@@ -20,6 +21,8 @@ def get_djpower_tier(djpower: Decimal) -> tuple[str, int]:
 
 def format_djpower_tier(tier: str, level: int) -> str:
     tier_name = constants.DJPOWER_TIER_DESC[tier]
+    if tier == "lord" or tier == "beginner":
+        return tier_name
     level_name = ["", "I", "II", "III", "IV"][level]
     return f"{tier_name} {level_name}"
 
@@ -65,3 +68,18 @@ def assemble_diff_strip(is_sc: bool, level: int, diff_star_path: str) -> Image.I
         strip.paste(star_img, (i * star_size[0], 0))
 
     return strip
+
+def diff_coeff(diff: int, is_sc: bool) -> int:
+    if is_sc:
+        if diff <= 8:
+            return diff + 22
+        else:
+            return (diff - 8) * 2 + 30
+    else:
+        return diff * 2
+
+def djpower_pp(coeff: int) -> Decimal:
+    return coeff * Decimal('2.22') + Decimal('2.31')
+
+def cut_digits(num: Decimal, digit: int) -> Decimal:
+    return num.quantize(Decimal(f'0.{"0" * (digit - 1)}1'), rounding=ROUND_FLOOR)

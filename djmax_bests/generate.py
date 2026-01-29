@@ -1,5 +1,6 @@
-from . import api_handler, bests_generate, models, scorelist_generate
 from PIL import Image
+
+from . import api_handler, bests_generate, models, scorelist_generate
 
 
 BOARD_LIST = ["SC", "MX", "11", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1"]
@@ -37,8 +38,22 @@ def generate_bests_all_boards(username: str, bmode: str) -> Image.Image:
     return bests_generate.generate_bests_image(bests_data)
 
 
+def generate_bests_theoretical(bmode: str) -> Image.Image:
+    song_db = api_handler.fetch_song_db()
+    bests_data = models.DMBests.get_theoretical_bests(bmode, song_db)
+    bests_data.organize()
+    return bests_generate.generate_bests_image(bests_data, is_max=True)
+
+
 def generate_scorelist(username: str, bmode: str, is_sc: bool, level: int) -> Image.Image:
     print(f"Fetching: {username} - {bmode}B - {'SC' if is_sc else ''}{level} (SCORELIST)")
     scorelist_data = api_handler.fetch_scorelist(username, bmode, is_sc, level)
+    scorelist_data.organize()
+    return scorelist_generate.generate_scorelist_image(scorelist_data)
+
+
+def generate_scorelist_new(username: str, bmode: str) -> Image.Image:
+    print(f"Fetching: {username} - {bmode}B - SC (SCORELIST NEW)")
+    scorelist_data = api_handler.fetch_scorelist_new(username, bmode)
     scorelist_data.organize()
     return scorelist_generate.generate_scorelist_image(scorelist_data)

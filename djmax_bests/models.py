@@ -1,10 +1,47 @@
+from decimal import Decimal
 from pydantic import BaseModel, RootModel, Field
-from decimal import Decimal, ROUND_FLOOR
-from . import constants, api_handler, util
+
+from . import constants, util
 
 
-def cut_digits(num: Decimal, digit: int) -> Decimal:
-    return num.quantize(Decimal(f'0.{"0" * (digit - 1)}1'), rounding=ROUND_FLOOR)
+class DMSongDBDiff(BaseModel):
+    level: int
+    # floor: Decimal
+    # rating: int
+
+class DMSongDBBMode(BaseModel):
+    NM: DMSongDBDiff | None = None
+    HD: DMSongDBDiff | None = None
+    MX: DMSongDBDiff | None = None
+    SC: DMSongDBDiff | None = None
+
+class DMSongDBPatterns(BaseModel):
+    BMode_4: DMSongDBBMode = Field(alias="4B")
+    BMode_5: DMSongDBBMode = Field(alias="5B")
+    BMode_6: DMSongDBBMode = Field(alias="6B")
+    BMode_8: DMSongDBBMode = Field(alias="8B")
+
+class DMSongDBEntry(BaseModel):
+    songid: int = Field(alias="title")
+    title: str = Field(alias="name")
+    dlc_code: str = Field(alias="dlcCode")
+    patterns: DMSongDBPatterns
+
+class DMSongDB(RootModel[list[DMSongDBEntry]]):
+    def get_level(self, songid: int, bmode: str, diff: str) -> int:
+        for entry in self.root:
+            if entry.songid == songid:
+                bmode_field = f"BMode_{bmode}"
+                bmode_data: DMSongDBBMode = getattr(entry.patterns, bmode_field)
+                diff_data: DMSongDBDiff = getattr(bmode_data, diff)
+                return diff_data.level
+        raise ValueError(f"Song ID {songid} with BMode {bmode} and diff {diff} not found in DB.")
+
+    def get_title(self, songid: int) -> str:
+        for entry in self.root:
+            if entry.songid == songid:
+                return entry.title
+        raise ValueError(f"Song ID {songid} not found in DB.")
 
 
 class VAPattern(BaseModel):
@@ -30,6 +67,7 @@ class VAResponse(BaseModel):
     # button: str
     # totalCount: int
     floors: list[VAFloor]
+
 
 class DMSong(BaseModel):
     songid: int
@@ -91,11 +129,11 @@ class DMBests(BaseModel):
 
     @property
     def total_basic_djpower(self) -> Decimal:
-        return cut_digits(self.total_basic_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
+        return util.cut_digits(self.total_basic_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
 
     @property
     def total_new_djpower(self) -> Decimal:
-        return cut_digits(self.total_new_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
+        return util.cut_digits(self.total_new_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
 
     @property
     def total_djpower_raw(self) -> Decimal:
@@ -103,7 +141,7 @@ class DMBests(BaseModel):
 
     @property
     def total_djpower(self) -> Decimal:
-        return cut_digits(self.total_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
+        return util.cut_digits(self.total_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
 
 
     def __add__(self, other: "DMBests") -> "DMBests":
@@ -121,8 +159,7 @@ class DMBests(BaseModel):
 
 
     @classmethod
-    def from_VAResponse(cls, username: str, bmode: str, va_response: VAResponse) -> "DMBests":
-        song_db = api_handler.fetch_song_db()
+    def from_VAResponse(cls, username: str, bmode: str, song_db: DMSongDB, va_response: VAResponse) -> "DMBests":
         basic_songs = []
         new_songs = []
 
@@ -147,6 +184,35 @@ class DMBests(BaseModel):
                     basic_songs.append(dm_song)
 
         return cls(username=username, bmode=bmode, basic=basic_songs, new=new_songs)
+
+    @classmethod
+    def get_theoretical_bests(cls, bmode: str, song_db: DMSongDB) -> "DMBests":
+        basic_songs = []
+        new_songs = []
+
+        for entry in song_db.root:
+            entry_info = entry.patterns.__getattribute__(f"BMode_{bmode}").SC
+            if entry_info is None:
+                continue
+            coeff = util.diff_coeff(entry_info.level, True)
+            theoretical_power = util.djpower_pp(coeff)
+            dm_song = DMSong(
+                songid=entry.songid,
+                title=entry.title,
+                pattern="SC",
+                level=entry_info.level,
+                score=Decimal("100.00"),
+                max_combo=1,
+                djpower=theoretical_power,
+                dlc_code=entry.dlc_code
+            )
+            if util.is_new(dm_song.dlc_code, dm_song.songid):
+                new_songs.append(dm_song)
+            else:
+                basic_songs.append(dm_song)
+
+        return cls(username="Max DJPower", bmode=bmode, basic=basic_songs, new=new_songs)
+
 
 class DMSongSimple(BaseModel):
     songid: int
@@ -179,7 +245,7 @@ class DMScorelist(BaseModel):
                     count += 1
         if count == 0:
             return Decimal(0)
-        return cut_digits(score_sum / count, 2)
+        return util.cut_digits(score_sum / count, 2)
 
     @property
     def completion_rate(self) -> Decimal:
@@ -193,7 +259,7 @@ class DMScorelist(BaseModel):
                 count += 1
         if count == 0:
             return Decimal(0)
-        return cut_digits(score_sum / count, 2)
+        return util.cut_digits(score_sum / count, 2)
 
     @property
     def count_patterns(self) -> dict[str, int]:
@@ -242,8 +308,7 @@ class DMScorelist(BaseModel):
 
 
     @classmethod
-    def from_VAResponse(cls, username: str, bmode: str, is_sc: bool, level: int, va_response: VAResponse) -> "DMScorelist":
-        song_db = api_handler.fetch_song_db()
+    def from_VAResponse(cls, username: str, bmode: str, is_sc: bool, level: int, song_db: DMSongDB, va_response: VAResponse) -> "DMScorelist":
         floors: list[DMScorelistFloor] = []
 
         for floor in va_response.floors:
@@ -276,41 +341,34 @@ class DMScorelist(BaseModel):
 
         return cls(username=username, bmode=bmode, is_sc=is_sc, level=level, floors=floors)
 
-class DMSongDBDiff(BaseModel):
-    level: int
-    # floor: Decimal
-    # rating: int
+    @classmethod
+    def from_VAResponse_new(cls, username: str, bmode: str, va_response: VAResponse) -> "DMScorelist":
+        floors: list[DMScorelistFloor] = []
 
-class DMSongDBBMode(BaseModel):
-    NM: DMSongDBDiff | None = None
-    HD: DMSongDBDiff | None = None
-    MX: DMSongDBDiff | None = None
-    SC: DMSongDBDiff | None = None
+        for floor in va_response.floors:
+            for pattern in floor.patterns:
+                if not util.is_new(pattern.dlcCode, pattern.title):
+                    continue
 
-class DMSongDBPatterns(BaseModel):
-    BMode_4: DMSongDBBMode = Field(alias="4B")
-    BMode_5: DMSongDBBMode = Field(alias="5B")
-    BMode_6: DMSongDBBMode = Field(alias="6B")
-    BMode_8: DMSongDBBMode = Field(alias="8B")
+                floor_constant = floor.floorNumber
 
-class DMSongDBEntry(BaseModel):
-    songid: int = Field(alias="title")
-    title: str = Field(alias="name")
-    dlc_code: str = Field(alias="dlcCode")
-    patterns: DMSongDBPatterns
+                dm_song_simple = DMSongSimple(
+                    songid=pattern.title,
+                    pattern=pattern.pattern,
+                    score=pattern.score,
+                    max_combo=pattern.maxCombo,
+                    dlc_code=pattern.dlcCode
+                )
 
-class DMSongDB(RootModel[list[DMSongDBEntry]]):
-    def get_level(self, songid: int, bmode: str, diff: str) -> int:
-        for entry in self.root:
-            if entry.songid == songid:
-                bmode_field = f"BMode_{bmode}"
-                bmode_data: DMSongDBBMode = getattr(entry.patterns, bmode_field)
-                diff_data: DMSongDBDiff = getattr(bmode_data, diff)
-                return diff_data.level
-        raise ValueError(f"Song ID {songid} with BMode {bmode} and diff {diff} not found in DB.")
+                for _floor in floors:
+                    if _floor.floor_constant == floor_constant:
+                        _floor.songs.append(dm_song_simple)
+                        break
+                else:
+                    new_floor = DMScorelistFloor(
+                        floor_constant=floor_constant,
+                        songs=[dm_song_simple]
+                    )
+                    floors.append(new_floor)
 
-    def get_title(self, songid: int) -> str:
-        for entry in self.root:
-            if entry.songid == songid:
-                return entry.title
-        raise ValueError(f"Song ID {songid} not found in DB.")
+        return cls(username=username, bmode=bmode, is_sc=False, level=0, floors=floors)

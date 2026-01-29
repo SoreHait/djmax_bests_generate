@@ -1,7 +1,8 @@
-from PIL import Image, ImageDraw, ImageFont
 import os
-from . import models, constants, api_handler, util
 from random import random
+from PIL import Image, ImageDraw, ImageFont
+
+from . import models, constants, api_handler, util
 
 
 IMAGE_PATH = os.path.join(os.path.dirname(__file__), "images", "bests")
@@ -41,7 +42,7 @@ def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Imag
 
     return bg
 
-def generate_bests_image(data: models.DMBests) -> Image.Image:
+def generate_bests_image(data: models.DMBests, is_max: bool = False) -> Image.Image:
     gap = 20
     basic_start = (100, 688)
     new_start = (100, 3398)
@@ -66,8 +67,10 @@ def generate_bests_image(data: models.DMBests) -> Image.Image:
         emblem_bg = Image.open(os.path.join(EMBLEM_BG_PATH, f"{data.username}.png"))
         bg.alpha_composite(emblem_bg, emblem_lt)
 
-    emblem = Image.open(os.path.join(EMBLEM_PATH, f"{djpower_tier}_{djpower_level}.png"))
-    bg.alpha_composite(emblem, emblem_lt)
+    if not is_max:
+        emblem = Image.open(os.path.join(EMBLEM_PATH, f"{djpower_tier}_{djpower_level}.png"))
+        bg.alpha_composite(emblem, emblem_lt)
+
     draw.rectangle(bmode_strip_box, fill=constants.BMODE_COLOR[data.bmode])
     draw.text((282, 370), data.bmode, font=font_bd, fill='white', anchor="ms")
     draw.text((1535, 212), data.username, font=font_rg, fill='white', anchor="lm")

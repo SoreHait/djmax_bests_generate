@@ -1,7 +1,8 @@
-from PIL import Image, ImageDraw, ImageFont
 import os
-from . import models, constants, api_handler, util
 from math import ceil
+from PIL import Image, ImageDraw, ImageFont
+
+from . import models, constants, api_handler, util
 
 
 IMAGE_PATH = os.path.join(os.path.dirname(__file__), "images", "scorelist")
@@ -67,7 +68,7 @@ def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
         floor_height = (len(floor.songs) - 1) // layout_width + 1
         total_height += group_sep_height + card_gap + floor_height * (card_size[1] + card_gap)
     mc_pos_offset = (card_size[0] - mc_img_size[0] // 2 + mc_pos_offset[0], 0 - mc_img_size[1] // 2 + mc_pos_offset[1])
-    main_pattern = "SC" if data.is_sc else ["NM", "HD", "MX"][(data.level - 1) // 5]
+    main_pattern = "SC" if data.is_sc or data.level == 0 else ["NM", "HD", "MX"][(data.level - 1) // 5]
     sc_tier = str((data.level - 1) // 5) if data.is_sc else ""
 
     bg = assemble_background(total_height)
@@ -83,7 +84,10 @@ def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
     star_strip = util.assemble_diff_strip(data.is_sc, data.level, DIFF_STAR_PATH)
     bg.alpha_composite(star_strip, (868, 231))
     font_bd = font_bd.font_variant(size=70)
-    draw.text((868 + star_strip.width + 20, 228 + star_strip.height // 2), f"{main_pattern}{data.level}", fill=constants.DIFF_COLOR[main_pattern + sc_tier], anchor='lm', font=font_bd)
+    if data.level > 0:
+        draw.text((868 + star_strip.width + 20, 228 + star_strip.height // 2), f"{main_pattern}{data.level}", fill=constants.DIFF_COLOR[main_pattern + sc_tier], anchor='lm', font=font_bd)
+    else:
+        draw.text((868 + star_strip.width // 2, 228 + star_strip.height // 2), "NEW SONGS", fill='#f4bb00', anchor='mm', font=font_bd)
 
     current_x = 1210
     font_bd = font_bd.font_variant(size=60)
@@ -127,7 +131,6 @@ def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
     # Song section
     font_rg = font_rg.font_variant(size=24)
     font_bd = font_bd.font_variant(size=100)
-    font_bd_s = font_bd.font_variant(size=70)
     overlay = Image.new("RGBA", (total_width, total_height))
     y_offset = t_space
     x_offset = l_space
