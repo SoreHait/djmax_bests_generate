@@ -255,7 +255,7 @@ class DMScorelist(BaseModel):
                 if is_sc and pattern.scFloor is not None:
                     floor_constant = pattern.scFloor
                 else:
-                    floor_constant = floor.floorNumber
+                    floor_constant = Decimal(int(floor.floorNumber))
                 dm_song_simple = DMSongSimple(
                     songid=pattern.title,
                     pattern=pattern.pattern,

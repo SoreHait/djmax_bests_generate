@@ -151,9 +151,7 @@ def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
                 elif integer != data.level and decimal == 3:
                     draw.text((l_space - 20, y_offset + 85), f"SC{integer} +2", fill='white', anchor='ra', font=font_rg)
             else:
-                constant_offset = int(decimal - 1)
                 draw.text((l_space - 20, y_offset), f"SC{integer}", fill='white', anchor='rt', font=font_bd)
-                draw.text((l_space - 20, y_offset + 85), f"+{constant_offset}", fill='white', anchor='ra', font=font_bd_s)
 
         else:
             draw.text((l_space - 20, y_offset), "N/A", fill='white', anchor='rt', font=font_bd)
