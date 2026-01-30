@@ -1,15 +1,15 @@
 from decimal import Decimal
 
 
-NEW_DLC = ["VL3", "PLI2", "ARC", "VL4"]
+NEW_DLC = ["PLI2", "ARC", "VL4"]
 
-NEW_SONG = [722, 748, 749]
+NEW_SONG = [748, 749, 770]
 
 CONVERT_CONSTANT = {
-    "4": Decimal("10000.0000") / Decimal("9168.72"),
-    "5": Decimal("10000.0000") / Decimal("9213.12"),
-    "6": Decimal("10000.0000") / Decimal("9190.92"),
-    "8": Decimal("10000.0000") / Decimal("9257.52")
+    "4": Decimal("10000.0000") / Decimal("9111.00"),
+    "5": Decimal("10000.0000") / Decimal("9155.40"),
+    "6": Decimal("10000.0000") / Decimal("9146.52"),
+    "8": Decimal("10000.0000") / Decimal("9226.44")
 }
 
 
