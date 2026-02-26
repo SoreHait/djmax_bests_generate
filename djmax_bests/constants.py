@@ -1,15 +1,15 @@
 from decimal import Decimal
 
 
-NEW_DLC = ["PLI2", "ARC", "VL4"]
+NEW_DLC = ["ARC", "VL4", "PLI3"]
 
 NEW_SONG = [748, 749, 770]
 
 CONVERT_CONSTANT = {
-    "4": Decimal("10000.0000") / Decimal("9111.00"),
-    "5": Decimal("10000.0000") / Decimal("9155.40"),
-    "6": Decimal("10000.0000") / Decimal("9146.52"),
-    "8": Decimal("10000.0000") / Decimal("9226.44")
+    "4": Decimal("10000.0000") / Decimal("9119.88"),
+    "5": Decimal("10000.0000") / Decimal("9159.84"),
+    "6": Decimal("10000.0000") / Decimal("9177.60"),
+    "8": Decimal("10000.0000") / Decimal("9230.88")
 }
 
 
@@ -55,6 +55,7 @@ DLC_COLOR = {
     "VL4": "#d4c393",
     "PLI1": "#dbd7ae",
     "PLI2": "#2269f7",
+    "PLI3": "#ec6fb5",
     "GG": "#d83e0e",
     "BA": "#00d1ff",
     "ESTI": "#e9d19b",
