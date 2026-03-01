@@ -1,4 +1,4 @@
-import requests, os
+import httpx, os
 from PIL import Image
 
 from . import models
@@ -13,15 +13,16 @@ if not os.path.exists(COVER_PATH):
 if not os.path.exists(CACHE_PATH):
     os.makedirs(CACHE_PATH)
 
+client = httpx.AsyncClient()
 
-def get_cover(songid: int) -> Image.Image:
+async def get_cover(songid: int) -> Image.Image:
     img_path = os.path.join(COVER_PATH, f'{songid}.jpg')
     if os.path.exists(img_path):
         return Image.open(img_path)
 
     url = f"https://v-archive.net/static/images/jackets/{songid}.jpg"
     print(f'Fetching cover {songid}')
-    response = requests.get(url)
+    response = await client.get(url)
     if response.status_code == 200:
         with open(img_path, 'wb') as f:
             f.write(response.content)
@@ -31,14 +32,14 @@ def get_cover(songid: int) -> Image.Image:
         return Image.new('RGB', (80, 80), color='red')
 
 
-def fetch_song_db() -> models.DMSongDB:
+async def fetch_song_db() -> models.DMSongDB:
     db_path = os.path.join(CACHE_PATH, 'songs.json')
     if os.path.exists(db_path):
         with open(db_path, 'r', encoding='utf-8') as f:
             return models.DMSongDB.model_validate_json(f.read())
 
     url = "https://v-archive.net/db/songs.json"
-    response = requests.get(url)
+    response = await client.get(url)
     response.raise_for_status()
     with open(db_path, 'w', encoding='utf-8') as f:
         f.write(response.text)
@@ -53,15 +54,15 @@ def remove_cache():
 def build_board_req_url(username: str, bmode: str, board: str) -> str:
     return f"https://v-archive.net/api/archive/{username}/board/{bmode}/{board}"
 
-def fetch_bests(username: str, bmode: str, board: str) -> models.DMBests:
+async def fetch_bests(username: str, bmode: str, board: str) -> models.DMBests:
     url = build_board_req_url(username, bmode, board)
-    response = requests.get(url)
+    response = await client.get(url)
     response.raise_for_status()
-    song_db = fetch_song_db()
+    song_db = await fetch_song_db()
     va_resp = models.VAResponse.model_validate_json(response.text)
     return models.DMBests.from_VAResponse(username, bmode, song_db, va_resp)
 
-def fetch_scorelist(username: str, bmode: str, is_sc: bool, level: int) -> models.DMScorelist:
+async def fetch_scorelist(username: str, bmode: str, is_sc: bool, level: int) -> models.DMScorelist:
     board = None
     if is_sc:
         board = "SC"
@@ -70,15 +71,15 @@ def fetch_scorelist(username: str, bmode: str, is_sc: bool, level: int) -> model
     else:
         board = str(level)
     url = build_board_req_url(username, bmode, board)
-    response = requests.get(url)
+    response = await client.get(url)
     response.raise_for_status()
-    song_db = fetch_song_db()
+    song_db = await fetch_song_db()
     va_resp = models.VAResponse.model_validate_json(response.text)
     return models.DMScorelist.from_VAResponse(username, bmode, is_sc, level, song_db, va_resp)
 
-def fetch_scorelist_new(username: str, bmode: str) -> models.DMScorelist:
+async def fetch_scorelist_new(username: str, bmode: str) -> models.DMScorelist:
     url = build_board_req_url(username, bmode, "SC")
-    response = requests.get(url)
+    response = await client.get(url)
     response.raise_for_status()
     va_resp = models.VAResponse.model_validate_json(response.text)
     return models.DMScorelist.from_VAResponse_new(username, bmode, va_resp)

@@ -1,4 +1,4 @@
-import os
+import os, asyncio
 from math import ceil
 from PIL import Image, ImageDraw, ImageFont
 
@@ -9,12 +9,11 @@ IMAGE_PATH = os.path.join(os.path.dirname(__file__), "images", "scorelist")
 FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts")
 DIFF_STAR_PATH = os.path.join(IMAGE_PATH, "diff_stars")
 
-def generate_single_song(draw_pattern_text: bool, song: models.DMSongSimple) -> Image.Image:
+def __generate_single_song_sync(draw_pattern_text: bool, song: models.DMSongSimple, cover: Image.Image) -> Image.Image:
     bg = Image.new("RGBA", (160, 200))
     draw = ImageDraw.Draw(bg)
     font_bd = ImageFont.truetype(os.path.join(FONT_PATH, "Respect_bd.ttf"), 26)
 
-    cover = api_handler.get_cover(song.songid)
     cover = cover.resize((160, 160))
     bg.paste(cover)
     overlay = Image.open(os.path.join(IMAGE_PATH, "card.png"))
@@ -28,6 +27,11 @@ def generate_single_song(draw_pattern_text: bool, song: models.DMSongSimple) -> 
     draw.text((80, 178), f"{song.score}%" if song.score is not None else "N/P", font=font_bd, fill='white' if song.score is not None else 'gray', anchor="mm")
 
     return bg
+
+async def generate_single_song(draw_pattern_text: bool, song: models.DMSongSimple) -> Image.Image:
+    cover = await api_handler.get_cover(song.songid)
+    img = await asyncio.to_thread(__generate_single_song_sync, draw_pattern_text, song, cover)
+    return img
 
 def assemble_background(height: int) -> Image.Image:
     bg = Image.new("RGBA", (2200, height))
@@ -46,7 +50,7 @@ def assemble_background(height: int) -> Image.Image:
 
     return bg
 
-def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
+async def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
     # Layout settings
     layout_width = 10
     card_gap = 20
@@ -71,7 +75,7 @@ def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
     main_pattern = "SC" if data.is_sc or data.level == 0 else ["NM", "HD", "MX"][(data.level - 1) // 5]
     sc_tier = str((data.level - 1) // 5) if data.is_sc else ""
 
-    bg = assemble_background(total_height)
+    bg = await asyncio.to_thread(assemble_background, total_height)
     draw = ImageDraw.Draw(bg)
     font_rg = ImageFont.truetype(os.path.join(FONT_PATH, "Respect_rg.ttf"), 80)
     font_bd = ImageFont.truetype(os.path.join(FONT_PATH, "Respect_bd.ttf"), 270)
@@ -161,7 +165,7 @@ def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
 
         for s_idx, song in enumerate(floor.songs):
             need_pattern_text = song.pattern != main_pattern
-            card_image = generate_single_song(need_pattern_text, song)
+            card_image = await generate_single_song(need_pattern_text, song)
             if s_idx % layout_width == 0 and s_idx != 0:
                 x_offset = l_space
                 y_offset += card_size[1] + card_gap

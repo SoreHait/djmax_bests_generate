@@ -1,4 +1,4 @@
-import os
+import os, asyncio
 from random import random
 from PIL import Image, ImageDraw, ImageFont
 
@@ -11,13 +11,12 @@ EMBLEM_PATH = os.path.join(IMAGE_PATH, "emblems")
 EMBLEM_BG_PATH = os.path.join(IMAGE_PATH, "emblem_bg")
 DIFF_STAR_PATH = os.path.join(IMAGE_PATH, "diff_stars")
 
-def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Image:
+def __generate_single_song_sync(idx: int, type: str, song: models.DMSong, cover: Image.Image) -> Image.Image:
     overlay = Image.open(os.path.join(IMAGE_PATH, f"{type}_card.png"))
     bg = Image.new("RGBA", overlay.size)
     draw = ImageDraw.Draw(bg)
-    cover = api_handler.get_cover(song.songid)
-    cover = cover.resize((160, 160))
-    bg.paste(cover)
+    _cover = cover.resize((160, 160))
+    bg.paste(_cover)
     bg.alpha_composite(overlay)
 
     font_bd = ImageFont.truetype(os.path.join(FONT_PATH, "Respect_bd.ttf"), 23)
@@ -42,7 +41,12 @@ def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Imag
 
     return bg
 
-def generate_bests_image(data: models.DMBests, is_max: bool = False) -> Image.Image:
+async def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Image:
+    cover = await api_handler.get_cover(song.songid)
+    img = await asyncio.to_thread(__generate_single_song_sync, idx, type, song, cover)
+    return img
+
+async def generate_bests_image(data: models.DMBests, is_max: bool = False) -> Image.Image:
     gap = 20
     basic_start = (100, 688)
     new_start = (100, 3398)
@@ -91,7 +95,7 @@ def generate_bests_image(data: models.DMBests, is_max: bool = False) -> Image.Im
     draw.text((2520, 580), f"{data.total_basic_djpower:.4f}", font=font_rg, fill='white', anchor="mm")
     draw.text((2850, 600), f"{data.total_basic_djpower_raw:.4f}", font=font_rg_s, fill='white', anchor="mm")
     for idx, song in enumerate(data.basic):
-        song_image = generate_single_song(idx + 1, "basic", song)
+        song_image = await generate_single_song(idx + 1, "basic", song)
         x = basic_start[0] + (idx % 5) * (560 + gap)
         y = basic_start[1] + (idx // 5) * (160 + gap)
         bg.paste(song_image, (x, y))
@@ -100,13 +104,13 @@ def generate_bests_image(data: models.DMBests, is_max: bool = False) -> Image.Im
     draw.text((2520, 3292), f"{data.total_new_djpower:.4f}", font=font_rg, fill='white', anchor="mm")
     draw.text((2850, 3312), f"{data.total_new_djpower_raw:.4f}", font=font_rg_s, fill='white', anchor="mm")
     for idx, song in enumerate(data.new):
-        song_image = generate_single_song(idx + 1, "new", song)
+        song_image = await generate_single_song(idx + 1, "new", song)
         x = new_start[0] + (idx % 5) * (560 + gap)
         y = new_start[1] + (idx // 5) * (160 + gap)
         bg.paste(song_image, (x, y))
 
     # footnote
-    songdb = api_handler.fetch_song_db()
+    songdb = await api_handler.fetch_song_db()
     draw.text((570, 4545), f"{constants.CONVERT_CONSTANT[data.bmode]:.8f}", font=font_lt, fill='white', anchor="ls")
     draw.text((375, 4616), ', '.join(constants.NEW_DLC), font=font_lt, fill='white', anchor="ls")
     draw.text((385, 4687), ", ".join(songdb.get_title(songid) for songid in constants.NEW_SONG), font=font_lt, fill='white', anchor="ls")

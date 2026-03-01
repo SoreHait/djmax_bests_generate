@@ -12,11 +12,11 @@ BOARD_LIST = ["SC", "MX", "11", "10", "9", "8", "7", "6", "5", "4", "3", "2", "1
 # BUT HIGH POWER ON LOWER PATTERNS (eg. 30+), THIS FUNCTION WILL TERMINATE EARLY IN MX
 # AND SKIP THOSE HIGH POWER ON LOWER PATTERNS, BUT THIS IS AN EDGE CASE
 # AND A NORMAL PLAYER SHOULD NOT HAVE A TOP 100 LIKE THAT
-def generate_bests(username: str, bmode: str) -> Image.Image:
+async def generate_bests(username: str, bmode: str) -> Image.Image:
     bests_data = models.DMBests(username=username, bmode=bmode, basic=[], new=[])
     for board in BOARD_LIST:
         print(f"Fetching: {username} - {bmode}B - {board} (BESTS - NORMAL)")
-        next_bests_data = api_handler.fetch_bests(username, bmode, board)
+        next_bests_data = await api_handler.fetch_bests(username, bmode, board)
         if next_bests_data.basic_max_djpower >= bests_data.basic_min_djpower or \
            next_bests_data.new_max_djpower >= bests_data.new_min_djpower:
             bests_data += next_bests_data
@@ -24,36 +24,36 @@ def generate_bests(username: str, bmode: str) -> Image.Image:
         else:
             break
 
-    return bests_generate.generate_bests_image(bests_data)
+    return await bests_generate.generate_bests_image(bests_data)
 
 # IF A PLAYER DO EXPERIENCE THE PROBLEM MENTIONED ABOVE,
 # USE THIS FUNCTION INSTEAD
-def generate_bests_all_boards(username: str, bmode: str) -> Image.Image:
+async def generate_bests_all_boards(username: str, bmode: str) -> Image.Image:
     bests_data = models.DMBests(username=username, bmode=bmode, basic=[], new=[])
     for board in BOARD_LIST:
         print(f"Fetching: {username} - {bmode}B - {board} (BESTS - ALL BOARDS)")
-        next_bests_data = api_handler.fetch_bests(username, bmode, board)
+        next_bests_data =  await api_handler.fetch_bests(username, bmode, board)
         bests_data += next_bests_data
     bests_data.organize()
-    return bests_generate.generate_bests_image(bests_data)
+    return await bests_generate.generate_bests_image(bests_data)
 
 
-def generate_bests_theoretical(bmode: str) -> Image.Image:
-    song_db = api_handler.fetch_song_db()
+async def generate_bests_theoretical(bmode: str) -> Image.Image:
+    song_db = await api_handler.fetch_song_db()
     bests_data = models.DMBests.get_theoretical_bests(bmode, song_db)
     bests_data.organize()
-    return bests_generate.generate_bests_image(bests_data, is_max=True)
+    return await bests_generate.generate_bests_image(bests_data, is_max=True)
 
 
-def generate_scorelist(username: str, bmode: str, is_sc: bool, level: int) -> Image.Image:
+async def generate_scorelist(username: str, bmode: str, is_sc: bool, level: int) -> Image.Image:
     print(f"Fetching: {username} - {bmode}B - {'SC' if is_sc else ''}{level} (SCORELIST)")
-    scorelist_data = api_handler.fetch_scorelist(username, bmode, is_sc, level)
+    scorelist_data = await api_handler.fetch_scorelist(username, bmode, is_sc, level)
     scorelist_data.organize()
-    return scorelist_generate.generate_scorelist_image(scorelist_data)
+    return await scorelist_generate.generate_scorelist_image(scorelist_data)
 
 
-def generate_scorelist_new(username: str, bmode: str) -> Image.Image:
+async def generate_scorelist_new(username: str, bmode: str) -> Image.Image:
     print(f"Fetching: {username} - {bmode}B - SC (SCORELIST NEW)")
-    scorelist_data = api_handler.fetch_scorelist_new(username, bmode)
+    scorelist_data = await api_handler.fetch_scorelist_new(username, bmode)
     scorelist_data.organize()
-    return scorelist_generate.generate_scorelist_image(scorelist_data)
+    return await scorelist_generate.generate_scorelist_image(scorelist_data)
