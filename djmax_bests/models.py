@@ -341,6 +341,8 @@ class DMScorelist(BaseModel):
 
         for pattern in va_response.records:
             floor_constant = pattern.floorName if pattern.floorName is not None else Decimal(0)
+            if not is_sc:
+                floor_constant = Decimal(int(floor_constant))
             dm_song_simple = DMSongSimple(
                 songid=pattern.title,
                 pattern=pattern.pattern,
@@ -363,6 +365,8 @@ class DMScorelist(BaseModel):
 
         for pattern in all_patterns:
             floor_constant = pattern[2] if pattern[2] is not None else Decimal(0)
+            if not is_sc:
+                floor_constant = Decimal(int(floor_constant))
             dm_song_simple = DMSongSimple(
                 songid=pattern[0],
                 pattern=pattern[1],
