@@ -82,7 +82,7 @@ async def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
 
     # Grand header
     draw.rectangle(bmode_strip_box, fill=constants.BMODE_COLOR[data.bmode])
-    draw.text((193, 357), data.bmode, fill='white', anchor='ms', font=font_bd)
+    draw.text((193, 357), str(data.bmode), fill='white', anchor='ms', font=font_bd)
     draw.text((873, 165), data.username, fill='white', anchor='lm', font=font_rg)
 
     star_strip = util.assemble_diff_strip(data.is_sc, data.level, DIFF_STAR_PATH)

@@ -1,4 +1,4 @@
-import httpx, os
+import httpx, os, urllib.parse
 from PIL import Image
 
 from . import models
@@ -38,7 +38,8 @@ async def fetch_song_db() -> models.DMSongDB:
         with open(db_path, 'r', encoding='utf-8') as f:
             return models.DMSongDB.model_validate_json(f.read())
 
-    url = "https://v-archive.net/db/songs.json"
+    print("songdb cache invalidated, fetching new one")
+    url = "https://v-archive.net/db/v2/songs.json"
     response = await client.get(url)
     response.raise_for_status()
     with open(db_path, 'w', encoding='utf-8') as f:
@@ -49,37 +50,65 @@ def remove_cache():
     db_path = os.path.join(CACHE_PATH, 'songs.json')
     if os.path.exists(db_path):
         os.remove(db_path)
+    print("Cache cleared")
 
 
-def build_board_req_url(username: str, bmode: str, board: str) -> str:
-    return f"https://v-archive.net/api/archive/{username}/board/{bmode}/{board}"
+def build_req_url(username: str, bmode: int, **kwargs) -> str:
+    query = urllib.parse.urlencode(kwargs)
+    return f"https://v-archive.net/api/v2/archive/{username}/button/{bmode}?{query}"
 
-async def fetch_bests(username: str, bmode: str, board: str) -> models.DMBests:
-    url = build_board_req_url(username, bmode, board)
+async def fetch_bests(username: str, bmode: int) -> models.DMBests:
+    print(f'Fetching bests for {username} - {bmode}b')
+    url_basic = build_req_url(
+        username,
+        bmode,
+        newTab = "false",
+        sort = "djpower",
+        order = "desc",
+        limit = "70"
+    )
+    url_new = build_req_url(
+        username,
+        bmode,
+        newTab = "true",
+        sort = "djpower",
+        order = "desc",
+        limit = "30"
+    )
+    response_basic = await client.get(url_basic)
+    response_basic.raise_for_status()
+    response_new = await client.get(url_new)
+    response_new.raise_for_status()
+
+    va_resp_basic = models.VAResponse.model_validate_json(response_basic.text)
+    va_resp_new = models.VAResponse.model_validate_json(response_new.text)
+    return models.DMBests.from_VAResponse(va_resp_basic, va_resp_new)
+
+async def fetch_scorelist(username: str, bmode: int, is_sc: bool, level: int) -> models.DMScorelist:
+    print(f'Fetching scorelist for {username} - {bmode}b - {"SC" if is_sc else "NM,HD,MX"} - level {level}')
+    url = build_req_url(
+        username,
+        bmode,
+        pattern = "SC" if is_sc else "NM,HD,MX",
+        levelMin = level,
+        levelMax = level
+    )
     response = await client.get(url)
     response.raise_for_status()
     song_db = await fetch_song_db()
     va_resp = models.VAResponse.model_validate_json(response.text)
-    return models.DMBests.from_VAResponse(username, bmode, song_db, va_resp)
+    return models.DMScorelist.from_VAResponse(is_sc, level, song_db, va_resp)
 
-async def fetch_scorelist(username: str, bmode: str, is_sc: bool, level: int) -> models.DMScorelist:
-    board = None
-    if is_sc:
-        board = "SC"
-    elif 12 <= level <= 15:
-        board = "MX"
-    else:
-        board = str(level)
-    url = build_board_req_url(username, bmode, board)
+async def fetch_scorelist_new(username: str, bmode: int) -> models.DMScorelist:
+    print(f'Fetching scorelist for {username} - {bmode}b - NEW SONGS')
+    url = build_req_url(
+        username,
+        bmode,
+        pattern = "SC",
+        newTab = "true"
+    )
     response = await client.get(url)
     response.raise_for_status()
     song_db = await fetch_song_db()
     va_resp = models.VAResponse.model_validate_json(response.text)
-    return models.DMScorelist.from_VAResponse(username, bmode, is_sc, level, song_db, va_resp)
-
-async def fetch_scorelist_new(username: str, bmode: str) -> models.DMScorelist:
-    url = build_board_req_url(username, bmode, "SC")
-    response = await client.get(url)
-    response.raise_for_status()
-    va_resp = models.VAResponse.model_validate_json(response.text)
-    return models.DMScorelist.from_VAResponse_new(username, bmode, va_resp)
+    return models.DMScorelist.from_VAResponse_new(song_db, va_resp)

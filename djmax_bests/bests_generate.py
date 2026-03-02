@@ -76,7 +76,7 @@ async def generate_bests_image(data: models.DMBests, is_max: bool = False) -> Im
         bg.alpha_composite(emblem, emblem_lt)
 
     draw.rectangle(bmode_strip_box, fill=constants.BMODE_COLOR[data.bmode])
-    draw.text((282, 370), data.bmode, font=font_bd, fill='white', anchor="ms")
+    draw.text((282, 370), str(data.bmode), font=font_bd, fill='white', anchor="ms")
     draw.text((1535, 212), data.username, font=font_rg, fill='white', anchor="lm")
     font_bd = font_bd.font_variant(size=64)
     draw.text((1535, 306), djpower_desc, font=font_bd, fill=djpower_color, anchor="lm")
