@@ -24,7 +24,7 @@ def __generate_single_song_sync(draw_pattern_text: bool, song: models.DMSongSimp
         draw.text((152, 152), song.pattern, font=font_bd, fill=constants.DIFF_COLOR[song.pattern], anchor="rs")
 
     font_bd = font_bd.font_variant(size=30)
-    draw.text((80, 178), f"{song.score}%" if song.score is not None else "N/P", font=font_bd, fill='white' if song.score is not None else 'gray', anchor="mm")
+    draw.text((80, 178), f"{song.score:.2f}%" if song.score is not None else "N/P", font=font_bd, fill='white' if song.score is not None else 'gray', anchor="mm")
 
     return bg
 
