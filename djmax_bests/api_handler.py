@@ -33,7 +33,7 @@ async def get_cover(songid: int) -> Image.Image:
         return Image.open(img_path)
     else:
         print(f'Failed to get cover {songid}')
-        return Image.new('RGB', (80, 80), color='red')
+        return Image.new('RGB', (80, 80), color='black')
 
 def get_convert_constant(bmode: int) -> Decimal:
     maxpower_file = os.path.join(CACHE_PATH, f'maxpower_{bmode}.txt')
@@ -41,6 +41,7 @@ def get_convert_constant(bmode: int) -> Decimal:
         with open(maxpower_file, 'r') as f:
             return Decimal("10000.0000") / Decimal(f.read().strip())
 
+    print(f'maxpower cache for {bmode}b invalidated, fetching new one')
     url = f"https://v-archive.net/api/v2/archive/DEV/djClass/{bmode}"
     response = httpx.get(url)
     response.raise_for_status()
@@ -65,9 +66,11 @@ async def fetch_song_db() -> "models.DMSongDB":
     return DMSongDB.model_validate_json(response.text)
 
 def remove_cache():
-    db_path = os.path.join(CACHE_PATH, 'songs.json')
-    if os.path.exists(db_path):
-        os.remove(db_path)
+    cache_files = os.listdir(CACHE_PATH)
+    for file in cache_files:
+        file_path = os.path.join(CACHE_PATH, file)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
     print("Cache cleared")
 
 

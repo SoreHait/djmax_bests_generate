@@ -1,19 +1,3 @@
-BMODE_COLOR = {
-    4: "#29db71",
-    5: "#40c0e6",
-    6: "#e9902f",
-    8: "#8392ff"
-}
-
-DIFF_COLOR = {
-    "NM": "#f4bb00",
-    "HD": "#f45c00",
-    "MX": "#f40052",
-    "SC0": "#e00075",
-    "SC1": "#c404e1",
-    "SC2": "#3d66ff"
-}
-
 DLC_COLOR = {
     "R": "#ffd250",
     "RV": "#ffd250",
@@ -56,6 +40,22 @@ DLC_COLOR = {
     "EZ2": "#00ecff",
     "GC": "#51eefe",
     "MD": "#fe3db3"
+}
+
+BMODE_COLOR = {
+    4: "#29db71",
+    5: "#40c0e6",
+    6: "#e9902f",
+    8: "#8392ff"
+}
+
+DIFF_COLOR = {
+    "NM": "#f4bb00",
+    "HD": "#f45c00",
+    "MX": "#f40052",
+    "SC0": "#e00075",
+    "SC1": "#c404e1",
+    "SC2": "#3d66ff"
 }
 
 DJPOWER_TIER_COLOR = {
