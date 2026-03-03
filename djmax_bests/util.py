@@ -36,9 +36,6 @@ def wrap_text(text: str, font: FreeTypeFont, wrap_width: int) -> str:
         text += '...'
     return text
 
-def is_new(dlc_code: str, songid: int) -> bool:
-    return (dlc_code in constants.NEW_DLC) or (songid in constants.NEW_SONG)
-
 def get_mc_state(score: Decimal | None, max_combo: int | None) -> str | None:
     mc_state = None
     if score == Decimal("100.0"):

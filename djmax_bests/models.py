@@ -1,7 +1,7 @@
 from decimal import Decimal
 from pydantic import BaseModel, RootModel, Field
 
-from . import constants, util
+from . import api_handler, util
 
 
 class DMSongDBDiff(BaseModel):
@@ -25,6 +25,7 @@ class DMSongDBEntry(BaseModel):
     songid: int = Field(alias="title")
     title: str = Field(alias="name")
     dlc_code: str = Field(alias="dlcCode")
+    is_new: bool = Field(alias="newTab")
     patterns: DMSongDBPatterns
 
 class DMSongDB(RootModel[list[DMSongDBEntry]]):
@@ -62,10 +63,12 @@ class DMSongDB(RootModel[list[DMSongDBEntry]]):
     def get_new_songs_sc(self, bmode: int) -> list[tuple[int, str, int, str]]:
         new_songs = []
         for entry in self.root:
+            if not entry.is_new:
+                continue
             bmode_field = f"BMode_{bmode}"
             bmode_data: DMSongDBBMode = getattr(entry.patterns, bmode_field)
             diff_data = bmode_data.SC
-            if diff_data is not None and util.is_new(entry.dlc_code, entry.songid):
+            if diff_data is not None:
                 new_songs.append((entry.songid, "SC", diff_data.level, entry.dlc_code))
         return new_songs
 
@@ -151,11 +154,11 @@ class DMBests(BaseModel):
 
     @property
     def total_basic_djpower(self) -> Decimal:
-        return util.cut_digits(self.total_basic_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
+        return util.cut_digits(self.total_basic_djpower_raw * api_handler.get_convert_constant(self.bmode), 4)
 
     @property
     def total_new_djpower(self) -> Decimal:
-        return util.cut_digits(self.total_new_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
+        return util.cut_digits(self.total_new_djpower_raw * api_handler.get_convert_constant(self.bmode), 4)
 
     @property
     def total_djpower_raw(self) -> Decimal:
@@ -163,7 +166,7 @@ class DMBests(BaseModel):
 
     @property
     def total_djpower(self) -> Decimal:
-        ret_val = util.cut_digits(self.total_djpower_raw * constants.CONVERT_CONSTANT[self.bmode], 4)
+        ret_val = util.cut_digits(self.total_djpower_raw * api_handler.get_convert_constant(self.bmode), 4)
         if ret_val > Decimal("10000.0000"):
             return Decimal("10000.0000")
         return ret_val
@@ -233,7 +236,7 @@ class DMBests(BaseModel):
                 djpower=theoretical_power,
                 dlc_code=entry.dlc_code
             )
-            if util.is_new(dm_song.dlc_code, dm_song.songid):
+            if entry.is_new:
                 new_songs.append(dm_song)
             else:
                 basic_songs.append(dm_song)

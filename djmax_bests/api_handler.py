@@ -1,7 +1,11 @@
 import httpx, os, urllib.parse
 from PIL import Image
+from decimal import Decimal
 
-from . import models
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from . import models
 
 
 COVER_PATH = os.path.join(os.path.dirname(__file__), 'covers')
@@ -31,12 +35,26 @@ async def get_cover(songid: int) -> Image.Image:
         print(f'Failed to get cover {songid}')
         return Image.new('RGB', (80, 80), color='red')
 
+def get_convert_constant(bmode: int) -> Decimal:
+    maxpower_file = os.path.join(CACHE_PATH, f'maxpower_{bmode}.txt')
+    if os.path.exists(maxpower_file):
+        with open(maxpower_file, 'r') as f:
+            return Decimal("10000.0000") / Decimal(f.read().strip())
 
-async def fetch_song_db() -> models.DMSongDB:
+    url = f"https://v-archive.net/api/v2/archive/DEV/djClass/{bmode}"
+    response = httpx.get(url)
+    response.raise_for_status()
+    data = response.json()
+    with open(maxpower_file, 'w') as f:
+        f.write(str(data["maxDjPower"]))
+    return Decimal("10000.0000") / Decimal(data["maxDjPower"])
+
+async def fetch_song_db() -> "models.DMSongDB":
+    from .models import DMSongDB
     db_path = os.path.join(CACHE_PATH, 'songs.json')
     if os.path.exists(db_path):
         with open(db_path, 'r', encoding='utf-8') as f:
-            return models.DMSongDB.model_validate_json(f.read())
+            return DMSongDB.model_validate_json(f.read())
 
     print("songdb cache invalidated, fetching new one")
     url = "https://v-archive.net/db/v2/songs.json"
@@ -44,7 +62,7 @@ async def fetch_song_db() -> models.DMSongDB:
     response.raise_for_status()
     with open(db_path, 'w', encoding='utf-8') as f:
         f.write(response.text)
-    return models.DMSongDB.model_validate_json(response.text)
+    return DMSongDB.model_validate_json(response.text)
 
 def remove_cache():
     db_path = os.path.join(CACHE_PATH, 'songs.json')
@@ -57,7 +75,8 @@ def build_req_url(username: str, bmode: int, **kwargs) -> str:
     query = urllib.parse.urlencode(kwargs)
     return f"https://v-archive.net/api/v2/archive/{username}/button/{bmode}?{query}"
 
-async def fetch_bests(username: str, bmode: int) -> models.DMBests:
+async def fetch_bests(username: str, bmode: int) -> "models.DMBests":
+    from .models import DMBests, VAResponse
     print(f'Fetching bests for {username} - {bmode}b')
     url_basic = build_req_url(
         username,
@@ -80,11 +99,12 @@ async def fetch_bests(username: str, bmode: int) -> models.DMBests:
     response_new = await client.get(url_new)
     response_new.raise_for_status()
 
-    va_resp_basic = models.VAResponse.model_validate_json(response_basic.text)
-    va_resp_new = models.VAResponse.model_validate_json(response_new.text)
-    return models.DMBests.from_VAResponse(va_resp_basic, va_resp_new)
+    va_resp_basic = VAResponse.model_validate_json(response_basic.text)
+    va_resp_new = VAResponse.model_validate_json(response_new.text)
+    return DMBests.from_VAResponse(va_resp_basic, va_resp_new)
 
-async def fetch_scorelist(username: str, bmode: int, is_sc: bool, level: int) -> models.DMScorelist:
+async def fetch_scorelist(username: str, bmode: int, is_sc: bool, level: int) -> "models.DMScorelist":
+    from .models import DMScorelist, VAResponse
     print(f'Fetching scorelist for {username} - {bmode}b - {"SC" if is_sc else "NM,HD,MX"} - level {level}')
     url = build_req_url(
         username,
@@ -96,10 +116,11 @@ async def fetch_scorelist(username: str, bmode: int, is_sc: bool, level: int) ->
     response = await client.get(url)
     response.raise_for_status()
     song_db = await fetch_song_db()
-    va_resp = models.VAResponse.model_validate_json(response.text)
-    return models.DMScorelist.from_VAResponse(is_sc, level, song_db, va_resp)
+    va_resp = VAResponse.model_validate_json(response.text)
+    return DMScorelist.from_VAResponse(is_sc, level, song_db, va_resp)
 
-async def fetch_scorelist_new(username: str, bmode: int) -> models.DMScorelist:
+async def fetch_scorelist_new(username: str, bmode: int) -> "models.DMScorelist":
+    from .models import DMScorelist, VAResponse
     print(f'Fetching scorelist for {username} - {bmode}b - NEW SONGS')
     url = build_req_url(
         username,
@@ -110,5 +131,5 @@ async def fetch_scorelist_new(username: str, bmode: int) -> models.DMScorelist:
     response = await client.get(url)
     response.raise_for_status()
     song_db = await fetch_song_db()
-    va_resp = models.VAResponse.model_validate_json(response.text)
-    return models.DMScorelist.from_VAResponse_new(song_db, va_resp)
+    va_resp = VAResponse.model_validate_json(response.text)
+    return DMScorelist.from_VAResponse_new(song_db, va_resp)

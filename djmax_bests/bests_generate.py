@@ -110,9 +110,6 @@ async def generate_bests_image(data: models.DMBests, is_max: bool = False) -> Im
         bg.paste(song_image, (x, y))
 
     # footnote
-    songdb = await api_handler.fetch_song_db()
-    draw.text((570, 4545), f"{constants.CONVERT_CONSTANT[data.bmode]:.8f}", font=font_lt, fill='white', anchor="ls")
-    draw.text((375, 4616), ', '.join(constants.NEW_DLC), font=font_lt, fill='white', anchor="ls")
-    draw.text((385, 4687), ", ".join(songdb.get_title(songid) for songid in constants.NEW_SONG), font=font_lt, fill='white', anchor="ls")
+    draw.text((570, 4545), f"{api_handler.get_convert_constant(data.bmode):.8f}", font=font_lt, fill='white', anchor="ls")
 
     return bg

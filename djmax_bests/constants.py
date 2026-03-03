@@ -1,18 +1,3 @@
-from decimal import Decimal
-
-
-NEW_DLC = ["ARC", "VL4", "PLI3"]
-
-NEW_SONG = [748, 749, 770]
-
-CONVERT_CONSTANT = {
-    4: Decimal("10000.0000") / Decimal("9119.88"),
-    5: Decimal("10000.0000") / Decimal("9159.84"),
-    6: Decimal("10000.0000") / Decimal("9177.60"),
-    8: Decimal("10000.0000") / Decimal("9230.88")
-}
-
-
 BMODE_COLOR = {
     4: "#29db71",
     5: "#40c0e6",
