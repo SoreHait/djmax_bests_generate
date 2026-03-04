@@ -35,11 +35,12 @@ async def get_cover(songid: int) -> Image.Image:
         print(f'Failed to get cover {songid}')
         return Image.new('RGB', (80, 80), color='black')
 
-def get_convert_constant(bmode: int) -> Decimal:
+def get_convert_constant(bmode: int) -> tuple[Decimal, Decimal]:
     maxpower_file = os.path.join(CACHE_PATH, f'maxpower_{bmode}.txt')
     if os.path.exists(maxpower_file):
         with open(maxpower_file, 'r') as f:
-            return Decimal("10000.0000") / Decimal(f.read().strip())
+            maxpower = Decimal(f.read().strip())
+            return Decimal("10000.0000") / maxpower, maxpower
 
     print(f'maxpower cache for {bmode}b invalidated, fetching new one')
     url = f"https://v-archive.net/api/v2/archive/DEV/djClass/{bmode}"
@@ -48,7 +49,8 @@ def get_convert_constant(bmode: int) -> Decimal:
     data = response.json()
     with open(maxpower_file, 'w') as f:
         f.write(str(data["maxDjPower"]))
-    return Decimal("10000.0000") / Decimal(data["maxDjPower"])
+    maxpower = Decimal(str(data["maxDjPower"]))
+    return Decimal("10000.0000") / maxpower, maxpower
 
 async def fetch_song_db() -> "models.DMSongDB":
     from .models import DMSongDB

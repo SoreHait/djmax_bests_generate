@@ -154,11 +154,11 @@ class DMBests(BaseModel):
 
     @property
     def total_basic_djpower(self) -> Decimal:
-        return util.cut_digits(self.total_basic_djpower_raw * api_handler.get_convert_constant(self.bmode), 4)
+        return util.cut_digits(self.total_basic_djpower_raw * api_handler.get_convert_constant(self.bmode)[0], 4)
 
     @property
     def total_new_djpower(self) -> Decimal:
-        return util.cut_digits(self.total_new_djpower_raw * api_handler.get_convert_constant(self.bmode), 4)
+        return util.cut_digits(self.total_new_djpower_raw * api_handler.get_convert_constant(self.bmode)[0], 4)
 
     @property
     def total_djpower_raw(self) -> Decimal:
@@ -166,7 +166,7 @@ class DMBests(BaseModel):
 
     @property
     def total_djpower(self) -> Decimal:
-        ret_val = util.cut_digits(self.total_djpower_raw * api_handler.get_convert_constant(self.bmode), 4)
+        ret_val = util.cut_digits(self.total_djpower_raw * api_handler.get_convert_constant(self.bmode)[0], 4)
         if ret_val > Decimal("10000.0000"):
             return Decimal("10000.0000")
         return ret_val

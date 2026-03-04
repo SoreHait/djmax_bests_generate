@@ -48,9 +48,9 @@ async def generate_single_song(idx: int, type: str, song: models.DMSong) -> Imag
 
 async def generate_bests_image(data: models.DMBests, is_max: bool = False) -> Image.Image:
     gap = 20
-    basic_start = (100, 688)
-    new_start = (100, 3398)
-    bmode_strip_box = (119, 36, 151, 468)
+    basic_start = (100, 691)
+    new_start = (100, 3405)
+    bmode_strip_box = (119, 40, 151, 468)
     emblem_lt = (1029, 154)
 
     bg = Image.open(os.path.join(IMAGE_PATH, "bg.png"))
@@ -101,8 +101,8 @@ async def generate_bests_image(data: models.DMBests, is_max: bool = False) -> Im
         bg.paste(song_image, (x, y))
 
     # NEW section
-    draw.text((2520, 3292), f"{data.total_new_djpower:.4f}", font=font_rg, fill='white', anchor="mm")
-    draw.text((2850, 3312), f"{data.total_new_djpower_raw:.4f}", font=font_rg_s, fill='white', anchor="mm")
+    draw.text((2520, 3295), f"{data.total_new_djpower:.4f}", font=font_rg, fill='white', anchor="mm")
+    draw.text((2850, 3315), f"{data.total_new_djpower_raw:.4f}", font=font_rg_s, fill='white', anchor="mm")
     for idx, song in enumerate(data.new):
         song_image = await generate_single_song(idx + 1, "new", song)
         x = new_start[0] + (idx % 5) * (560 + gap)
@@ -110,6 +110,7 @@ async def generate_bests_image(data: models.DMBests, is_max: bool = False) -> Im
         bg.paste(song_image, (x, y))
 
     # footnote
-    draw.text((570, 4545), f"{api_handler.get_convert_constant(data.bmode):.8f}", font=font_lt, fill='white', anchor="ls")
+    conv_const, maxpower = api_handler.get_convert_constant(data.bmode)
+    draw.text((570, 4553), f"{conv_const:.8f} ({maxpower:.2f})", font=font_lt, fill='white', anchor="ls")
 
     return bg
