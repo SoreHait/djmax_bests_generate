@@ -44,24 +44,24 @@ class DMSongDB(RootModel[list[DMSongDBEntry]]):
                 return entry.title
         raise ValueError(f"Song ID {songid} not found in DB.")
 
-    def get_songs_by_level(self, level: int, bmode: int, is_sc: bool) -> list[tuple[int, str, Decimal | None, str]]:
-        matching_songs = []
+    def get_songs_by_level(self, level: int, bmode: int, is_sc: bool) -> dict[int, tuple[str, Decimal | None, str]]:
+        matching_songs = {}
         for entry in self.root:
             bmode_field = f"BMode_{bmode}"
             bmode_data: DMSongDBBMode = getattr(entry.patterns, bmode_field)
             if is_sc:
                 diff_data = bmode_data.SC
                 if diff_data is not None and diff_data.level == level:
-                    matching_songs.append((entry.songid, "SC", diff_data.floorName, entry.dlc_code))
+                    matching_songs[entry.songid] = ("SC", diff_data.floorName, entry.dlc_code)
             else:
                 for diff in ["NM", "HD", "MX"]:
                     diff_data = getattr(bmode_data, diff)
                     if diff_data is not None and diff_data.level == level:
-                        matching_songs.append((entry.songid, diff, diff_data.floorName, entry.dlc_code))
+                        matching_songs[entry.songid] = (diff, diff_data.floorName, entry.dlc_code)
         return matching_songs
 
-    def get_new_songs_sc(self, bmode: int) -> list[tuple[int, str, int, str]]:
-        new_songs = []
+    def get_new_songs_sc(self, bmode: int) -> dict[int, tuple[str, int, str]]:
+        new_songs = {}
         for entry in self.root:
             if not entry.is_new:
                 continue
@@ -69,7 +69,7 @@ class DMSongDB(RootModel[list[DMSongDBEntry]]):
             bmode_data: DMSongDBBMode = getattr(entry.patterns, bmode_field)
             diff_data = bmode_data.SC
             if diff_data is not None:
-                new_songs.append((entry.songid, "SC", diff_data.level, entry.dlc_code))
+                new_songs[entry.songid] = ("SC", diff_data.level, entry.dlc_code)
         return new_songs
 
 
@@ -364,18 +364,18 @@ class DMScorelist(BaseModel):
                 )
                 floors.append(new_floor)
 
-            all_patterns.remove((pattern.title, pattern.pattern, pattern.floorName, pattern.dlcCode))
+            all_patterns.pop(pattern.title)
 
-        for pattern in all_patterns:
-            floor_constant = pattern[2] if pattern[2] is not None else Decimal(0)
+        for id, (diff, floor_name, dlc_code) in all_patterns.items():
+            floor_constant = floor_name if floor_name is not None else Decimal(0)
             if not is_sc:
                 floor_constant = Decimal(int(floor_constant))
             dm_song_simple = DMSongSimple(
-                songid=pattern[0],
-                pattern=pattern[1],
+                songid=id,
+                pattern=diff,
                 score=None,
                 max_combo=False,
-                dlc_code=pattern[3]
+                dlc_code=dlc_code
             )
             for _floor in floors:
                 if _floor.floor_constant == floor_constant:
@@ -415,16 +415,16 @@ class DMScorelist(BaseModel):
                 )
                 floors.append(new_floor)
 
-            all_patterns.remove((pattern.title, pattern.pattern, pattern.level, pattern.dlcCode))
+            all_patterns.pop(pattern.title)
 
-        for pattern in all_patterns:
-            floor_constant = pattern[2]
+        for id, (diff, floor_name, dlc_code) in all_patterns.items():
+            floor_constant = floor_name
             dm_song_simple = DMSongSimple(
-                songid=pattern[0],
-                pattern=pattern[1],
+                songid=id,
+                pattern=diff,
                 score=None,
                 max_combo=False,
-                dlc_code=pattern[3]
+                dlc_code=dlc_code
             )
             for _floor in floors:
                 if _floor.floor_constant == floor_constant:
