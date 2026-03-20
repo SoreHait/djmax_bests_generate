@@ -10,6 +10,10 @@ if TYPE_CHECKING:
 
 COVER_PATH = os.path.join(os.path.dirname(__file__), 'covers')
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cache')
+HEADERS = {
+    "Content-Type": "application/json",
+    "User-Agent": "SH-Util-Bot"
+}
 
 if not os.path.exists(COVER_PATH):
     os.makedirs(COVER_PATH)
@@ -17,7 +21,7 @@ if not os.path.exists(COVER_PATH):
 if not os.path.exists(CACHE_PATH):
     os.makedirs(CACHE_PATH)
 
-client = httpx.AsyncClient()
+client = httpx.AsyncClient(headers=HEADERS)
 
 async def get_cover(songid: int) -> Image.Image:
     img_path = os.path.join(COVER_PATH, f'{songid}.jpg')
@@ -44,7 +48,7 @@ def get_convert_constant(bmode: int) -> tuple[Decimal, Decimal]:
 
     print(f'maxpower cache for {bmode}b invalidated, fetching new one')
     url = f"https://v-archive.net/api/v2/archive/DEV/djClass/{bmode}"
-    response = httpx.get(url)
+    response = httpx.get(url, headers=HEADERS)
     response.raise_for_status()
     data = response.json()
     with open(maxpower_file, 'w') as f:
