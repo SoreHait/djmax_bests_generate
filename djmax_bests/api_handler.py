@@ -12,7 +12,7 @@ COVER_PATH = os.path.join(os.path.dirname(__file__), 'covers')
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cache')
 HEADERS = {
     "Content-Type": "application/json",
-    "User-Agent": "SH-Util-Bot"
+    "User-Agent": "sh-util-bot/gh:SoreHait/djmax_bests_generate"
 }
 
 if not os.path.exists(COVER_PATH):
