@@ -39,7 +39,8 @@ DLC_COLOR = {
     "DM": "#99e5d8",
     "EZ2": "#00ecff",
     "GC": "#51eefe",
-    "MD": "#fe3db3"
+    "MD": "#fe3db3",
+    "OGK": "#81fb52"
 }
 
 BMODE_COLOR = {

@@ -28,7 +28,7 @@ async def get_cover(songid: int) -> Image.Image:
     if os.path.exists(img_path):
         return Image.open(img_path)
 
-    url = f"https://v-archive.net/static/images/jackets/{songid}.jpg"
+    url = f"https://v-archive.net/s3/images/jackets/{songid}.jpg"
     print(f'Fetching cover {songid}')
     response = await client.get(url)
     if response.status_code == 200:
