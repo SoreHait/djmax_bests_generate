@@ -64,6 +64,9 @@ def assemble_diff_strip(is_sc: bool, level: int, diff_star_path: str) -> Image.I
             star_img = stars[3]
         strip.paste(star_img, (i * star_size[0], 0))
 
+    for star in stars:
+        star.close()
+
     return strip
 
 def diff_coeff(diff: int, is_sc: bool) -> int:

@@ -10,15 +10,14 @@ FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts")
 DIFF_STAR_PATH = os.path.join(IMAGE_PATH, "diff_stars")
 
 def __generate_single_song_sync(draw_pattern_text: bool, song: models.DMSongSimple, cover: Image.Image) -> Image.Image:
-    bg = Image.new("RGBA", (160, 200))
+    with Image.open(os.path.join(IMAGE_PATH, "card.png")) as overlay:
+        bg = Image.new("RGBA", overlay.size)
+        with cover.resize((160, 160)) as _cover:
+            bg.paste(_cover)
+        bg.alpha_composite(overlay)
+
     draw = ImageDraw.Draw(bg)
     font_bd = ImageFont.truetype(os.path.join(FONT_PATH, "Respect_bd.ttf"), 26)
-
-    cover = cover.resize((160, 160))
-    bg.paste(cover)
-    overlay = Image.open(os.path.join(IMAGE_PATH, "card.png"))
-    bg.alpha_composite(overlay)
-
     draw.text((8, 152), song.dlc_code, font=font_bd, fill=constants.DLC_COLOR.get(song.dlc_code, 'white'), anchor="ls")
     if draw_pattern_text:
         draw.text((152, 152), song.pattern, font=font_bd, fill=constants.DIFF_COLOR[song.pattern], anchor="rs")
@@ -29,24 +28,24 @@ def __generate_single_song_sync(draw_pattern_text: bool, song: models.DMSongSimp
     return bg
 
 async def generate_single_song(draw_pattern_text: bool, song: models.DMSongSimple) -> Image.Image:
-    cover = await api_handler.get_cover(song.songid)
-    img = await asyncio.to_thread(__generate_single_song_sync, draw_pattern_text, song, cover)
+    with await api_handler.get_cover(song.songid) as cover:
+        img = await asyncio.to_thread(__generate_single_song_sync, draw_pattern_text, song, cover)
     return img
 
 def assemble_background(height: int) -> Image.Image:
     bg = Image.new("RGBA", (2200, height))
-    header = Image.open(os.path.join(IMAGE_PATH, "header.png"))
-    loop = Image.open(os.path.join(IMAGE_PATH, "loop.png"))
 
     pasted_height = 0
-    bg.paste(header, (0, pasted_height))
-    pasted_height += header.height
-    while pasted_height < height:
-        bg.paste(loop, (0, pasted_height))
-        pasted_height += loop.height
+    with Image.open(os.path.join(IMAGE_PATH, "header.png")) as header:
+        bg.paste(header, (0, pasted_height))
+        pasted_height += header.height
+    with Image.open(os.path.join(IMAGE_PATH, "loop.png")) as loop:
+        while pasted_height < height:
+            bg.paste(loop, (0, pasted_height))
+            pasted_height += loop.height
 
-    footer = Image.open(os.path.join(IMAGE_PATH, "footer.png"))
-    bg.alpha_composite(footer, (0, height - footer.height))
+    with Image.open(os.path.join(IMAGE_PATH, "footer.png")) as footer:
+        bg.alpha_composite(footer, (0, height - footer.height))
 
     return bg
 
@@ -85,13 +84,13 @@ async def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
     draw.text((193, 357), str(data.bmode), fill='white', anchor='ms', font=font_bd)
     draw.text((873, 165), data.username, fill='white', anchor='lm', font=font_rg)
 
-    star_strip = util.assemble_diff_strip(data.is_sc, data.level, DIFF_STAR_PATH)
-    bg.alpha_composite(star_strip, (868, 231))
-    font_bd = font_bd.font_variant(size=70)
-    if data.level > 0:
-        draw.text((868 + star_strip.width + 20, 228 + star_strip.height // 2), f"{main_pattern}{data.level}", fill=constants.DIFF_COLOR[main_pattern + sc_tier], anchor='lm', font=font_bd)
-    else:
-        draw.text((868 + star_strip.width // 2, 228 + star_strip.height // 2), "NEW SONGS", fill='#f4bb00', anchor='mm', font=font_bd)
+    with util.assemble_diff_strip(data.is_sc, data.level, DIFF_STAR_PATH) as star_strip:
+        bg.alpha_composite(star_strip, (868, 231))
+        font_bd = font_bd.font_variant(size=70)
+        if data.level > 0:
+            draw.text((868 + star_strip.width + 20, 228 + star_strip.height // 2), f"{main_pattern}{data.level}", fill=constants.DIFF_COLOR[main_pattern + sc_tier], anchor='lm', font=font_bd)
+        else:
+            draw.text((868 + star_strip.width // 2, 228 + star_strip.height // 2), "NEW SONGS", fill='#f4bb00', anchor='mm', font=font_bd)
 
     current_x = 1210
     font_bd = font_bd.font_variant(size=60)
@@ -120,10 +119,10 @@ async def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
     draw.rectangle([(current_x - 1, 310), (current_x + 1, 440)], fill='white')
 
     current_x += 30
-    mc_img = Image.open(os.path.join(IMAGE_PATH, "MC_counter.png"))
-    pp_img = Image.open(os.path.join(IMAGE_PATH, "PP_counter.png"))
-    bg.alpha_composite(mc_img, (current_x, 365 - mc_img_size[1]))
-    bg.alpha_composite(pp_img, (current_x, 437 - mc_img_size[1]))
+    with Image.open(os.path.join(IMAGE_PATH, "MC_counter.png")) as mc_img:
+        bg.alpha_composite(mc_img, (current_x, 365 - mc_img_size[1]))
+    with Image.open(os.path.join(IMAGE_PATH, "PP_counter.png")) as pp_img:
+        bg.alpha_composite(pp_img, (current_x, 437 - mc_img_size[1]))
 
     current_x += mc_img_size[0] + 30
     cmc, cpp = data.count_mc_pp
@@ -135,52 +134,52 @@ async def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
     # Song section
     font_rg = font_rg.font_variant(size=24)
     font_bd = font_bd.font_variant(size=100)
-    overlay = Image.new("RGBA", (total_width, total_height))
-    y_offset = t_space
-    x_offset = l_space
-    for floor in data.floors:
-        draw.rectangle([(l_space, y_offset), (total_width - r_space, y_offset + group_sep_height - 1)], fill='white')
-        y_offset += group_sep_height + card_gap
-
-        if floor.floor_constant > 0:
-            scaled = floor.floor_constant * 10
-            integer = scaled // 10
-            decimal = scaled % 10
-            if data.is_sc:
-                constant_offset = int((integer - data.level) * 3 + (decimal - 1))
-                draw.text((l_space - 20, y_offset), "0" if constant_offset == 0 else f"{constant_offset:+}", fill='white', anchor='rt', font=font_bd)
-                if constant_offset == 0:
-                    draw.text((l_space - 20, y_offset + 85), "Baseline", fill='white', anchor='ra', font=font_rg)
-                elif constant_offset == 1:
-                    draw.multiline_text((l_space - 20, y_offset + 85), "Relative Difficulty\nCompared to Baseline", fill='white', anchor='ra', font=font_rg, align='right')
-                elif integer != data.level and decimal == 1:
-                    draw.text((l_space - 20, y_offset + 85), f"SC{integer} Baseline", fill='white', anchor='ra', font=font_rg)
-                elif integer != data.level and decimal == 3:
-                    draw.text((l_space - 20, y_offset + 85), f"SC{integer} +2", fill='white', anchor='ra', font=font_rg)
-            else:
-                draw.text((l_space - 20, y_offset), f"SC{integer}", fill='white', anchor='rt', font=font_bd)
-
-        else:
-            draw.text((l_space - 20, y_offset), "N/A", fill='white', anchor='rt', font=font_bd)
-
-        for s_idx, song in enumerate(floor.songs):
-            need_pattern_text = song.pattern != main_pattern
-            card_image = await generate_single_song(need_pattern_text, song)
-            if s_idx % layout_width == 0 and s_idx != 0:
-                x_offset = l_space
-                y_offset += card_size[1] + card_gap
-            overlay.paste(card_image, (x_offset, y_offset))
-
-            if (mc_state := util.get_mc_state(song.score, song.max_combo)):
-                mc_img = Image.open(os.path.join(IMAGE_PATH, f"{mc_state}_badge.png"))
-                mc_paste_pos = (x_offset + mc_pos_offset[0], y_offset + mc_pos_offset[1])
-                overlay.alpha_composite(mc_img, mc_paste_pos)
-
-            x_offset += card_size[0] + card_gap
+    with Image.new("RGBA", (total_width, total_height)) as overlay:
+        y_offset = t_space
         x_offset = l_space
-        y_offset += card_size[1] + card_gap
+        for floor in data.floors:
+            draw.rectangle([(l_space, y_offset), (total_width - r_space, y_offset + group_sep_height - 1)], fill='white')
+            y_offset += group_sep_height + card_gap
 
-    # composite overlay at once
-    bg.alpha_composite(overlay)
+            if floor.floor_constant > 0:
+                scaled = floor.floor_constant * 10
+                integer = scaled // 10
+                decimal = scaled % 10
+                if data.is_sc:
+                    constant_offset = int((integer - data.level) * 3 + (decimal - 1))
+                    draw.text((l_space - 20, y_offset), "0" if constant_offset == 0 else f"{constant_offset:+}", fill='white', anchor='rt', font=font_bd)
+                    if constant_offset == 0:
+                        draw.text((l_space - 20, y_offset + 85), "Baseline", fill='white', anchor='ra', font=font_rg)
+                    elif constant_offset == 1:
+                        draw.multiline_text((l_space - 20, y_offset + 85), "Relative Difficulty\nCompared to Baseline", fill='white', anchor='ra', font=font_rg, align='right')
+                    elif integer != data.level and decimal == 1:
+                        draw.text((l_space - 20, y_offset + 85), f"SC{integer} Baseline", fill='white', anchor='ra', font=font_rg)
+                    elif integer != data.level and decimal == 3:
+                        draw.text((l_space - 20, y_offset + 85), f"SC{integer} +2", fill='white', anchor='ra', font=font_rg)
+                else:
+                    draw.text((l_space - 20, y_offset), f"SC{integer}", fill='white', anchor='rt', font=font_bd)
+
+            else:
+                draw.text((l_space - 20, y_offset), "N/A", fill='white', anchor='rt', font=font_bd)
+
+            for s_idx, song in enumerate(floor.songs):
+                need_pattern_text = song.pattern != main_pattern
+                with await generate_single_song(need_pattern_text, song) as card_image:
+                    if s_idx % layout_width == 0 and s_idx != 0:
+                        x_offset = l_space
+                        y_offset += card_size[1] + card_gap
+                    overlay.paste(card_image, (x_offset, y_offset))
+
+                if (mc_state := util.get_mc_state(song.score, song.max_combo)):
+                    with Image.open(os.path.join(IMAGE_PATH, f"{mc_state}_badge.png")) as mc_img:
+                        mc_paste_pos = (x_offset + mc_pos_offset[0], y_offset + mc_pos_offset[1])
+                        overlay.alpha_composite(mc_img, mc_paste_pos)
+
+                x_offset += card_size[0] + card_gap
+            x_offset = l_space
+            y_offset += card_size[1] + card_gap
+
+        # composite overlay at once
+        bg.alpha_composite(overlay)
 
     return bg
