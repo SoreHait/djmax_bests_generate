@@ -2,7 +2,7 @@ import os, asyncio
 from math import ceil
 from PIL import Image, ImageDraw, ImageFont
 
-from . import models, constants, api_handler, util
+from djmax_bests import models, constants, api_handler, util
 
 
 IMAGE_PATH = os.path.join(os.path.dirname(__file__), "images", "scorelist")
@@ -170,7 +170,7 @@ async def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
                         y_offset += card_size[1] + card_gap
                     overlay.paste(card_image, (x_offset, y_offset))
 
-                if (mc_state := util.get_mc_state(song.score, song.max_combo)):
+                if mc_state := util.get_mc_state(song.score, song.max_combo):
                     with Image.open(os.path.join(IMAGE_PATH, f"{mc_state}_badge.png")) as mc_img:
                         mc_paste_pos = (x_offset + mc_pos_offset[0], y_offset + mc_pos_offset[1])
                         overlay.alpha_composite(mc_img, mc_paste_pos)

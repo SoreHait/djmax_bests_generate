@@ -6,3 +6,4 @@ cache
 djmax_bests/images/bests/emblem_bg/*
 !djmax_bests/images/bests/emblem_bg/Max\ DJPower.png
 .vscode
+.idea

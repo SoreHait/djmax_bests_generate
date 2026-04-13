@@ -2,7 +2,7 @@ import os, asyncio
 from random import random
 from PIL import Image, ImageDraw, ImageFont
 
-from . import models, constants, api_handler, util
+from djmax_bests import models, constants, api_handler, util
 
 
 IMAGE_PATH = os.path.join(os.path.dirname(__file__), "images", "bests")
@@ -11,8 +11,8 @@ EMBLEM_PATH = os.path.join(IMAGE_PATH, "emblems")
 EMBLEM_BG_PATH = os.path.join(IMAGE_PATH, "emblem_bg")
 DIFF_STAR_PATH = os.path.join(IMAGE_PATH, "diff_stars")
 
-def __generate_single_song_sync(idx: int, type: str, song: models.DMSong, cover: Image.Image) -> Image.Image:
-    with Image.open(os.path.join(IMAGE_PATH, f"{type}_card.png")) as overlay:
+def __generate_single_song_sync(idx: int, card_type: str, song: models.DMSong, cover: Image.Image) -> Image.Image:
+    with Image.open(os.path.join(IMAGE_PATH, f"{card_type}_card.png")) as overlay:
         bg = Image.new("RGBA", overlay.size)
         with cover.resize((160, 160)) as _cover:
             bg.paste(_cover)
@@ -29,21 +29,21 @@ def __generate_single_song_sync(idx: int, type: str, song: models.DMSong, cover:
     draw.text((292, 135), f"{song.djpower:.4f}", font=font_bd, fill='#F0BE40', anchor="lm")
 
     font_bd = font_bd.font_variant(size=26)
-    draw.text((516, 17), f"#{idx}", font=font_bd, fill="black" if type == "new" else "#333333", anchor="mm")
+    draw.text((516, 17), f"#{idx}", font=font_bd, fill="black" if card_type == "new" else "#333333", anchor="mm")
 
     is_sc = song.pattern == "SC"
     with util.assemble_diff_strip(is_sc, song.level, DIFF_STAR_PATH) as diff_strip:
         bg.alpha_composite(diff_strip, (165, 52))
 
-    if (mc_state := util.get_mc_state(song.score, song.max_combo)):
+    if mc_state := util.get_mc_state(song.score, song.max_combo):
         with Image.open(os.path.join(IMAGE_PATH, f"{mc_state}.png")) as mc_overlay:
             bg.alpha_composite(mc_overlay)
 
     return bg
 
-async def generate_single_song(idx: int, type: str, song: models.DMSong) -> Image.Image:
+async def generate_single_song(idx: int, card_type: str, song: models.DMSong) -> Image.Image:
     with await api_handler.get_cover(song.songid) as cover:
-        img = await asyncio.to_thread(__generate_single_song_sync, idx, type, song, cover)
+        img = await asyncio.to_thread(__generate_single_song_sync, idx, card_type, song, cover)
     return img
 
 async def generate_bests_image(data: models.DMBests, is_max: bool = False) -> Image.Image:

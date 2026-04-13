@@ -110,7 +110,7 @@ async def fetch_bests(username: str, bmode: int) -> "models.DMBests":
 
     va_resp_basic = VAResponse.model_validate_json(response_basic.text)
     va_resp_new = VAResponse.model_validate_json(response_new.text)
-    return DMBests.from_VAResponse(va_resp_basic, va_resp_new)
+    return DMBests.from_va_response(va_resp_basic, va_resp_new)
 
 async def fetch_scorelist(username: str, bmode: int, is_sc: bool, level: int) -> "models.DMScorelist":
     from .models import DMScorelist, VAResponse
@@ -126,7 +126,7 @@ async def fetch_scorelist(username: str, bmode: int, is_sc: bool, level: int) ->
     response.raise_for_status()
     song_db = await fetch_song_db()
     va_resp = VAResponse.model_validate_json(response.text)
-    return DMScorelist.from_VAResponse(is_sc, level, song_db, va_resp)
+    return DMScorelist.from_va_response(is_sc, level, song_db, va_resp)
 
 async def fetch_scorelist_new(username: str, bmode: int) -> "models.DMScorelist":
     from .models import DMScorelist, VAResponse
@@ -141,4 +141,4 @@ async def fetch_scorelist_new(username: str, bmode: int) -> "models.DMScorelist"
     response.raise_for_status()
     song_db = await fetch_song_db()
     va_resp = VAResponse.model_validate_json(response.text)
-    return DMScorelist.from_VAResponse_new(song_db, va_resp)
+    return DMScorelist.from_va_response_new(song_db, va_resp)
