@@ -3,34 +3,12 @@ from math import ceil
 from PIL import Image, ImageDraw, ImageFont
 
 from djmax_bests import models, constants, api_handler, util
+from layout_const import *
 
 
 IMAGE_PATH = os.path.join(os.path.dirname(__file__), "images", "scorelist")
 FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts")
 DIFF_STAR_PATH = os.path.join(IMAGE_PATH, "diff_stars")
-
-def __generate_single_song_sync(draw_pattern_text: bool, song: models.DMSongSimple, cover: Image.Image) -> Image.Image:
-    with Image.open(os.path.join(IMAGE_PATH, "card.png")) as overlay:
-        bg = Image.new("RGBA", overlay.size)
-        with cover.resize((160, 160)) as _cover:
-            bg.paste(_cover)
-        bg.alpha_composite(overlay)
-
-    draw = ImageDraw.Draw(bg)
-    font_bd = ImageFont.truetype(os.path.join(FONT_PATH, "Respect_bd.ttf"), 26)
-    draw.text((8, 152), song.dlc_code, font=font_bd, fill=constants.DLC_COLOR.get(song.dlc_code, 'white'), anchor="ls")
-    if draw_pattern_text:
-        draw.text((152, 152), song.pattern, font=font_bd, fill=constants.DIFF_COLOR[song.pattern], anchor="rs")
-
-    font_bd = font_bd.font_variant(size=30)
-    draw.text((80, 178), f"{song.score:.2f}%" if song.score is not None else "N/P", font=font_bd, fill='white' if song.score is not None else 'gray', anchor="mm")
-
-    return bg
-
-async def generate_single_song(draw_pattern_text: bool, song: models.DMSongSimple) -> Image.Image:
-    with await api_handler.get_cover(song.songid) as cover:
-        img = await asyncio.to_thread(__generate_single_song_sync, draw_pattern_text, song, cover)
-    return img
 
 def assemble_background(height: int) -> Image.Image:
     bg = Image.new("RGBA", (2200, height))
@@ -50,19 +28,6 @@ def assemble_background(height: int) -> Image.Image:
     return bg
 
 async def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
-    # Layout settings
-    layout_width = 10
-    card_gap = 20
-    group_sep_height = 3
-    l_space = 310
-    t_space = 536
-    r_space = 110
-    b_space = 94
-    card_size = (160, 200)
-    mc_img_size = (60, 60)
-    mc_pos_offset = (-12, 12)
-    bmode_strip_box = (70, 20, 89, 464)
-
     # Layout calculations
     total_width = l_space + card_size[0] * layout_width + card_gap * (layout_width - 1) + r_space
     assert total_width == 2200
@@ -70,7 +35,7 @@ async def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
     for floor in data.floors:
         floor_height = (len(floor.songs) - 1) // layout_width + 1
         total_height += group_sep_height + card_gap + floor_height * (card_size[1] + card_gap)
-    mc_pos_offset = (card_size[0] - mc_img_size[0] // 2 + mc_pos_offset[0], 0 - mc_img_size[1] // 2 + mc_pos_offset[1])
+    mc_pos = (card_size[0] - mc_img_size[0] // 2 + mc_pos_offset[0], 0 - mc_img_size[1] // 2 + mc_pos_offset[1])
     main_pattern = "SC" if data.is_sc or data.level == 0 else ["NM", "HD", "MX"][(data.level - 1) // 5]
     sc_tier = str((data.level - 1) // 5) if data.is_sc else ""
 
@@ -132,6 +97,7 @@ async def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
     draw.text((current_x, 432), str(cpp), fill='white', anchor='rs', font=font_bd)
 
     # Song section
+    # TODO: Refactor all this shit
     font_rg = font_rg.font_variant(size=24)
     font_bd = font_bd.font_variant(size=100)
     with Image.new("RGBA", (total_width, total_height)) as overlay:
@@ -172,7 +138,7 @@ async def generate_scorelist_image(data: models.DMScorelist) -> Image.Image:
 
                 if mc_state := util.get_mc_state(song.score, song.max_combo):
                     with Image.open(os.path.join(IMAGE_PATH, f"{mc_state}_badge.png")) as mc_img:
-                        mc_paste_pos = (x_offset + mc_pos_offset[0], y_offset + mc_pos_offset[1])
+                        mc_paste_pos = (x_offset + mc_pos[0], y_offset + mc_pos[1])
                         overlay.alpha_composite(mc_img, mc_paste_pos)
 
                 x_offset += card_size[0] + card_gap
