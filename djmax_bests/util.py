@@ -2,6 +2,7 @@ import os
 from decimal import ROUND_FLOOR, Decimal
 from PIL import Image
 from PIL.ImageFont import FreeTypeFont
+from functools import partial
 
 from . import constants
 
@@ -26,6 +27,7 @@ def format_djpower_tier(tier: str, level: int) -> str:
     level_name = ["", "I", "II", "III", "IV"][level]
     return f"{tier_name} {level_name}"
 
+
 def wrap_text(text: str, font: FreeTypeFont, wrap_width: int) -> str:
     text_width = font.getmask(text).getbbox()[2]
     if text_width > wrap_width:
@@ -36,6 +38,7 @@ def wrap_text(text: str, font: FreeTypeFont, wrap_width: int) -> str:
         text += '...'
     return text
 
+
 def get_mc_state(score: Decimal | None, max_combo: int | None) -> str | None:
     mc_state = None
     if score == Decimal("100.0"):
@@ -44,7 +47,8 @@ def get_mc_state(score: Decimal | None, max_combo: int | None) -> str | None:
         mc_state = "MC"
     return mc_state
 
-def assemble_diff_strip(is_sc: bool, level: int, diff_star_path: str) -> Image.Image:
+
+def assemble_diff_strip_range(*, is_sc: bool, level_from: int, level_to: int, diff_star_path: str) -> Image.Image:
     pattern_type = "sc" if is_sc else "nm"
     stars = [
         Image.open(os.path.join(diff_star_path, f"{pattern_type}_1.png")),
@@ -58,7 +62,7 @@ def assemble_diff_strip(is_sc: bool, level: int, diff_star_path: str) -> Image.I
 
     strip = Image.new("RGBA", strip_size)
     for i in range(15):
-        if i < level:
+        if level_from <= i + 1 <= level_to:
             star_img = stars[i // 5]
         else:
             star_img = stars[3]
@@ -68,6 +72,9 @@ def assemble_diff_strip(is_sc: bool, level: int, diff_star_path: str) -> Image.I
         star.close()
 
     return strip
+
+assemble_diff_strip = partial(assemble_diff_strip_range, level_from=1)
+
 
 def diff_coeff(diff: int, is_sc: bool) -> int:
     if is_sc:
@@ -80,6 +87,7 @@ def diff_coeff(diff: int, is_sc: bool) -> int:
 
 def djpower_pp(coeff: int) -> Decimal:
     return coeff * Decimal('2.22') + Decimal('2.31')
+
 
 def cut_digits(num: Decimal, digit: int) -> Decimal:
     return num.quantize(Decimal(f'0.{"0" * (digit - 1)}1'), rounding=ROUND_FLOOR)

@@ -1,1 +1,1 @@
-from bests_generate import generate_bests_image
+from .bests_generate import generate_bests_image
