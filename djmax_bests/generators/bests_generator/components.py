@@ -6,14 +6,14 @@ from math import ceil
 from djmax_bests import models, constants, api_handler, util
 
 
-IMAGE_PATH = os.path.join(os.path.dirname(__file__), "assets")
+ASSET_PATH = os.path.join(os.path.dirname(__file__), "assets")
 FONT_PATH = os.path.join(os.path.dirname(__file__), "..", "fonts")
-EMBLEM_PATH = os.path.join(IMAGE_PATH, "emblems")
-EMBLEM_BG_PATH = os.path.join(IMAGE_PATH, "emblem_bg")
-DIFF_STAR_PATH = os.path.join(IMAGE_PATH, "diff_stars")
+EMBLEM_PATH = os.path.join(ASSET_PATH, "emblems")
+EMBLEM_BG_PATH = os.path.join(ASSET_PATH, "emblem_bg")
+DIFF_STAR_PATH = os.path.join(ASSET_PATH, "diff_stars")
 
 def __generate_single_song_sync(idx: int, card_type: str, song: models.DMSong, cover: Image.Image) -> Image.Image:
-    with Image.open(os.path.join(IMAGE_PATH, f"{card_type}_card.png")) as overlay:
+    with Image.open(os.path.join(ASSET_PATH, f"{card_type}_card.png")) as overlay:
         bg = Image.new("RGBA", overlay.size)
         with cover.resize((160, 160)) as _cover:
             bg.paste(_cover)
@@ -37,7 +37,7 @@ def __generate_single_song_sync(idx: int, card_type: str, song: models.DMSong, c
         bg.alpha_composite(diff_strip, (165, 52))
 
     if mc_state := util.get_mc_state(song.score, song.max_combo):
-        with Image.open(os.path.join(IMAGE_PATH, f"{mc_state}.png")) as mc_overlay:
+        with Image.open(os.path.join(ASSET_PATH, f"{mc_state}.png")) as mc_overlay:
             bg.alpha_composite(mc_overlay)
 
     return bg
@@ -48,7 +48,7 @@ async def generate_single_song(idx: int, card_type: str, song: models.DMSong) ->
     return img
 
 
-async def assemble_song_cards(songs: list[models.DMSong], card_type: str) -> Image.Image:
+async def assemble_song_cards(songs: list[models.DMSong], card_type: str) -> Image.Image | None:
     gap = 20
     layout_width = 5
     bg = None
@@ -75,7 +75,7 @@ def assemble_background(data: models.DMBests, is_max: bool) -> Image.Image:
     bmode_strip_box = (119, 40, 151, 468)
     emblem_lt = (1029, 154)
 
-    bg = Image.open(os.path.join(IMAGE_PATH, "bg.png"))
+    bg = Image.open(os.path.join(ASSET_PATH, "bg.png"))
     draw = ImageDraw.Draw(bg)
 
     djpower_tier, djpower_level = util.get_djpower_tier(data.total_djpower)

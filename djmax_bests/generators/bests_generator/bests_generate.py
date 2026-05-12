@@ -10,7 +10,9 @@ async def generate_bests_image(data: models.DMBests, is_max: bool = False) -> Im
     bg = assemble_background(data, is_max)
     basic_section = await assemble_song_cards(data.basic, "basic")
     new_section = await assemble_song_cards(data.new, "new")
-    bg.alpha_composite(basic_section, basic_start)
-    bg.alpha_composite(new_section, new_start)
+    if basic_section is not None:
+        bg.alpha_composite(basic_section, basic_start)
+    if new_section is not None:
+        bg.alpha_composite(new_section, new_start)
 
     return bg
