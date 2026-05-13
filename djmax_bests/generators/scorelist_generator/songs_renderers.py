@@ -11,7 +11,7 @@ font_bd = ImageFont.truetype(os.path.join(c.FONT_PATH, "Respect_bd.ttf"), 100)
 mc_pos = (c.CARD_SIZE[0] - c.MC_IMG_SIZE[0] // 2 + c.MC_POS_OFFSET[0], 0 - c.MC_IMG_SIZE[1] // 2 + c.MC_POS_OFFSET[1])
 
 
-async def by_difficulty(data: models.DMScorelist, dimension: tuple[int, int], main_pattern: str | None):
+async def by_difficulty(data: models.DMScorelist, dimension: tuple[int, int], main_pattern: str | None) -> Image.Image:
     overlay = Image.new("RGBA", dimension)
     draw = ImageDraw.Draw(overlay)
     y_offset = c.T_SPACE
@@ -28,28 +28,22 @@ async def by_difficulty(data: models.DMScorelist, dimension: tuple[int, int], ma
             integer = scaled // 10
             decimal = scaled % 10
             if data.is_sc:
+                # draw in SC deviation value
                 constant_offset = int((integer - data.level) * 3 + (decimal - 1))
-                draw.text((c.L_SPACE - 20, y_offset), "0" if constant_offset == 0 else f"{constant_offset:+}",
+                draw.text((c.L_SPACE - 20, y_offset), f"{constant_offset:+}",
                           fill='white', anchor='rt', font=font_bd)
-                if constant_offset == 0:
-                    draw.text((c.L_SPACE - 20, y_offset + 85), "Baseline", fill='white', anchor='ra', font=font_rg)
-                elif constant_offset == 1:
-                    draw.multiline_text((c.L_SPACE - 20, y_offset + 85), "Relative Difficulty\nCompared to Baseline",
-                                        fill='white', anchor='ra', font=font_rg, align='right')
-                elif integer != data.level and decimal == 1:
-                    draw.text((c.L_SPACE - 20, y_offset + 85), f"SC{integer} Baseline", fill='white', anchor='ra',
-                              font=font_rg)
-                elif integer != data.level and decimal == 3:
-                    draw.text((c.L_SPACE - 20, y_offset + 85), f"SC{integer} +2", fill='white', anchor='ra',
-                              font=font_rg)
+                draw.text((c.L_SPACE - 20, y_offset + 85), str(floor.floor_constant),
+                          fill='white', anchor='ra', font=font_rg)
+
             else:
+                # draw in plain SC value
                 draw.text((c.L_SPACE - 20, y_offset), f"SC{integer}", fill='white', anchor='rt', font=font_bd)
 
         else:
             draw.text((c.L_SPACE - 20, y_offset), "N/A", fill='white', anchor='rt', font=font_bd)
 
         for s_idx, song in enumerate(floor.songs):
-            need_pattern_text = song.pattern != main_pattern
+            need_pattern_text = song.pattern != main_pattern if main_pattern else True
             with await generate_single_song(need_pattern_text, song) as card_image:
                 if s_idx % c.LAYOUT_WIDTH == 0 and s_idx != 0:
                     x_offset = c.L_SPACE
@@ -64,3 +58,5 @@ async def by_difficulty(data: models.DMScorelist, dimension: tuple[int, int], ma
             x_offset += c.CARD_SIZE[0] + c.CARD_GAP
         x_offset = c.L_SPACE
         y_offset += c.CARD_SIZE[1] + c.CARD_GAP
+
+    return overlay
