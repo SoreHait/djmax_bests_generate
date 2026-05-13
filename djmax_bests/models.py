@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Literal
+from typing import Literal, TypeAlias
 
 from pydantic import BaseModel, RootModel, Field
 
@@ -30,6 +30,8 @@ class DMSongDBEntry(BaseModel):
     is_new: bool = Field(alias="newTab")
     patterns: DMSongDBPatterns
 
+SongDBMatches: TypeAlias = dict[tuple[int, str], tuple[Decimal, str]]
+
 class DMSongDB(RootModel[list[DMSongDBEntry]]):
     def get_level(self, songid: int, bmode: int, diff: str) -> int:
         for entry in self.root:
@@ -46,7 +48,7 @@ class DMSongDB(RootModel[list[DMSongDBEntry]]):
                 return entry.title
         raise ValueError(f"Song ID {songid} not found in DB.")
 
-    def get_songs_by_level(self, bmode: int, level: int, is_sc: bool) -> dict[int, tuple[str, Decimal | None, str]]:
+    def get_songs_by_level(self, bmode: int, level: int, is_sc: bool) -> SongDBMatches:
         matching_songs = {}
         for entry in self.root:
             bmode_field = f"BMode_{bmode}"
@@ -54,15 +56,17 @@ class DMSongDB(RootModel[list[DMSongDBEntry]]):
             if is_sc:
                 diff_data = bmode_data.SC
                 if diff_data is not None and diff_data.level == level:
-                    matching_songs[entry.songid] = ("SC", diff_data.floorName, entry.dlc_code)
+                    matching_songs[entry.songid, "SC"] = (diff_data.floorName if diff_data.floorName is not None else Decimal(0),
+                                                          entry.dlc_code)
             else:
                 for diff in ["NM", "HD", "MX"]:
-                    diff_data = getattr(bmode_data, diff)
+                    diff_data: DMSongDBDiff | None = getattr(bmode_data, diff)
                     if diff_data is not None and diff_data.level == level:
-                        matching_songs[entry.songid] = (diff, diff_data.floorName, entry.dlc_code)
+                        matching_songs[entry.songid, diff] = (Decimal(int(diff_data.floorName)) if diff_data.floorName is not None else Decimal(0),
+                                                              entry.dlc_code)
         return matching_songs
 
-    def get_new_songs(self, bmode: int, diff: str) -> dict[int, tuple[str, int, str]]:
+    def get_new_songs(self, bmode: int, diff: str) -> SongDBMatches:
         new_songs = {}
         for entry in self.root:
             if not entry.is_new:
@@ -71,7 +75,7 @@ class DMSongDB(RootModel[list[DMSongDBEntry]]):
             bmode_data: DMSongDBBMode = getattr(entry.patterns, bmode_field)
             diff_data: DMSongDBDiff | None = getattr(bmode_data, diff.upper())
             if diff_data is not None:
-                new_songs[entry.songid] = (diff.upper(), diff_data.level, entry.dlc_code)
+                new_songs[entry.songid, diff.upper()] = (Decimal(diff_data.level), entry.dlc_code)
         return new_songs
 
 
@@ -255,7 +259,7 @@ class DMSongSimple(BaseModel):
 
 class DMScorelistFloor(BaseModel):
     floor_constant: Decimal
-    floor_diff: Literal["NM", "HD", "MX", "SC"] | None
+    floor_diff: Literal["NM", "HD", "MX", "SC"]
     songs: list[DMSongSimple]
 
 class DMScorelist(BaseModel):
@@ -335,19 +339,30 @@ class DMScorelist(BaseModel):
 
 
     def organize(self):
-        self.floors.sort(key=lambda f: f.floor_constant, reverse=True)
+        def __sort_floor(f: DMScorelistFloor) -> tuple[int, Decimal]:
+            diff_index = {"NM": 0, "HD": 1, "MX": 2, "SC": 3}[f.floor_diff]
+            return diff_index, f.floor_constant
+        self.floors.sort(key=__sort_floor, reverse=True)
         for floor in self.floors:
             floor.songs.sort(key=lambda entry: entry.score if entry.score is not None else Decimal(0), reverse=True)
 
 
     @classmethod
-    def __make_songlist(cls, is_sc: bool, level: int, all_patterns: dict, va_response: VAResponse) -> "DMScorelist":
+    def __make_songlist(cls, is_sc: bool, measure_in_sc_floor: bool, level: int,
+                        all_patterns: SongDBMatches | None, va_response: VAResponse) -> "DMScorelist":
         floors: list[DMScorelistFloor] = []
         for pattern in va_response.records:
-            if is_sc:
+            if measure_in_sc_floor:
                 floor_constant = pattern.floorName if pattern.floorName is not None else Decimal(0)
+                floor_diff = "SC"
             else:
                 floor_constant = Decimal(pattern.level)
+                floor_diff = pattern.pattern
+
+            if not is_sc:
+                # drop decimal place
+                floor_constant = Decimal(int(floor_constant))
+
             dm_song_simple = DMSongSimple(
                 songid=pattern.title,
                 pattern=pattern.pattern,
@@ -356,50 +371,50 @@ class DMScorelist(BaseModel):
                 dlc_code=pattern.dlcCode
             )
             for _floor in floors:
-                if _floor.floor_constant == floor_constant and _floor.floor_diff == pattern.pattern:
+                if _floor.floor_constant == floor_constant and _floor.floor_diff == floor_diff:
                     _floor.songs.append(dm_song_simple)
                     break
             else:
                 new_floor = DMScorelistFloor(
                     floor_constant=floor_constant,
-                    floor_diff=pattern.pattern,
+                    floor_diff=floor_diff,
                     songs=[dm_song_simple]
                 )
                 floors.append(new_floor)
 
-            all_patterns.pop(pattern.title)
+            if all_patterns is not None:
+                all_patterns.pop((pattern.title, pattern.pattern))
 
-        for song_id, (diff, floor_name, dlc_code) in all_patterns.items():
-            floor_constant = floor_name if floor_name is not None else Decimal(0)
-            if not is_sc:
-                floor_constant = Decimal(int(floor_constant))
-            dm_song_simple = DMSongSimple(
-                songid=song_id,
-                pattern=diff,
-                score=None,
-                max_combo=False,
-                dlc_code=dlc_code
-            )
-            for _floor in floors:
-                if _floor.floor_constant == floor_constant and _floor.floor_diff == diff:
-                    _floor.songs.append(dm_song_simple)
-                    break
-            else:
-                new_floor = DMScorelistFloor(
-                    floor_constant=floor_constant,
-                    floor_diff=diff,
-                    songs=[dm_song_simple]
+        if all_patterns is not None:
+            for (song_id, diff), (floor_name, dlc_code) in all_patterns.items():
+                dm_song_simple = DMSongSimple(
+                    songid=song_id,
+                    pattern=diff,
+                    score=None,
+                    max_combo=False,
+                    dlc_code=dlc_code
                 )
-                floors.append(new_floor)
+                for _floor in floors:
+                    if _floor.floor_constant == floor_name and _floor.floor_diff == diff:
+                        _floor.songs.append(dm_song_simple)
+                        break
+                else:
+                    new_floor = DMScorelistFloor(
+                        floor_constant=floor_name,
+                        # pyrefly: ignore [bad-argument-type]
+                        floor_diff=diff,
+                        songs=[dm_song_simple]
+                    )
+                    floors.append(new_floor)
 
         return cls(username=va_response.nickname, bmode=va_response.button, is_sc=is_sc, level=level, floors=floors)
 
     @classmethod
-    def from_va_response(cls, is_sc: bool, level: int, song_db: DMSongDB, va_response: VAResponse) -> "DMScorelist":
+    def from_va_response_level(cls, is_sc: bool, level: int, song_db: DMSongDB, va_response: VAResponse) -> "DMScorelist":
         all_patterns = song_db.get_songs_by_level(va_response.button, level, is_sc)
-        return cls.__make_songlist(is_sc, level, all_patterns, va_response)
+        return cls.__make_songlist(is_sc, True, level, all_patterns, va_response)
 
     @classmethod
     def from_va_response_new(cls, diff: str, song_db: DMSongDB, va_response: VAResponse) -> "DMScorelist":
         all_patterns = song_db.get_new_songs(va_response.button, diff)
-        return cls.__make_songlist(False, 0, all_patterns, va_response)
+        return cls.__make_songlist(diff == "SC", False, 0, all_patterns, va_response)

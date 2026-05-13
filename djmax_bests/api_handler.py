@@ -126,19 +126,19 @@ async def fetch_scorelist(username: str, bmode: int, is_sc: bool, level: int) ->
     response.raise_for_status()
     song_db = await fetch_song_db()
     va_resp = VAResponse.model_validate_json(response.text)
-    return DMScorelist.from_va_response(is_sc, level, song_db, va_resp)
+    return DMScorelist.from_va_response_level(is_sc, level, song_db, va_resp)
 
-async def fetch_scorelist_new(username: str, bmode: int) -> "models.DMScorelist":
+async def fetch_scorelist_new(username: str, bmode: int, diff: str) -> "models.DMScorelist":
     from .models import DMScorelist, VAResponse
     print(f'Fetching scorelist for {username} - {bmode}b - NEW SONGS')
     url = build_req_url(
         username,
         bmode,
-        pattern = "SC",
+        pattern = diff,
         newTab = "true"
     )
     response = await client.get(url)
     response.raise_for_status()
     song_db = await fetch_song_db()
     va_resp = VAResponse.model_validate_json(response.text)
-    return DMScorelist.from_va_response_new(song_db, va_resp)
+    return DMScorelist.from_va_response_new(diff, song_db, va_resp)

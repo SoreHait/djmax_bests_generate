@@ -1,4 +1,6 @@
 import os
+from typing import Callable
+
 from PIL import Image, ImageDraw, ImageFont
 
 from djmax_bests import models, util
@@ -11,7 +13,8 @@ font_bd = ImageFont.truetype(os.path.join(c.FONT_PATH, "Respect_bd.ttf"), 100)
 mc_pos = (c.CARD_SIZE[0] - c.MC_IMG_SIZE[0] // 2 + c.MC_POS_OFFSET[0], 0 - c.MC_IMG_SIZE[1] // 2 + c.MC_POS_OFFSET[1])
 
 
-async def by_difficulty(data: models.DMScorelist, dimension: tuple[int, int], main_pattern: str | None) -> Image.Image:
+async def __render_base(group_header_func: Callable[[models.DMScorelistFloor, models.DMScorelist, ImageDraw.ImageDraw, int], None],
+                        data: models.DMScorelist, dimension: tuple[int, int], main_pattern: str | None) -> Image.Image:
     overlay = Image.new("RGBA", dimension)
     draw = ImageDraw.Draw(overlay)
     y_offset = c.T_SPACE
@@ -23,24 +26,7 @@ async def by_difficulty(data: models.DMScorelist, dimension: tuple[int, int], ma
             fill='white')
         y_offset += c.GROUP_SEP_HEIGHT + c.CARD_GAP
 
-        if floor.floor_constant > 0:
-            scaled = floor.floor_constant * 10
-            integer = scaled // 10
-            decimal = scaled % 10
-            if data.is_sc:
-                # draw in SC deviation value
-                constant_offset = int((integer - data.level) * 3 + (decimal - 1))
-                draw.text((c.L_SPACE - 20, y_offset), f"{constant_offset:+}",
-                          fill='white', anchor='rt', font=font_bd)
-                draw.text((c.L_SPACE - 20, y_offset + 85), str(floor.floor_constant),
-                          fill='white', anchor='ra', font=font_rg)
-
-            else:
-                # draw in plain SC value
-                draw.text((c.L_SPACE - 20, y_offset), f"SC{integer}", fill='white', anchor='rt', font=font_bd)
-
-        else:
-            draw.text((c.L_SPACE - 20, y_offset), "N/A", fill='white', anchor='rt', font=font_bd)
+        group_header_func(floor, data, draw, y_offset)
 
         for s_idx, song in enumerate(floor.songs):
             need_pattern_text = song.pattern != main_pattern if main_pattern else True
@@ -60,3 +46,38 @@ async def by_difficulty(data: models.DMScorelist, dimension: tuple[int, int], ma
         y_offset += c.CARD_SIZE[1] + c.CARD_GAP
 
     return overlay
+
+
+async def render_standard_scorelist(data: models.DMScorelist, dimension: tuple[int, int],
+                                    main_pattern: str | None) -> Image.Image:
+    def __draw_group_header(floor: models.DMScorelistFloor, _data: models.DMScorelist,
+                            draw: ImageDraw.ImageDraw, y_offset: int) -> None:
+        if floor.floor_constant > 0:
+            if _data.is_sc:
+                # draw in SC deviation value
+                scaled = floor.floor_constant * 10
+                integer = scaled // 10
+                decimal = scaled % 10
+                constant_offset = int((integer - _data.level) * 3 + (decimal - 1))
+                draw.text((c.L_SPACE - 20, y_offset), f"{constant_offset:+}",
+                          fill='white', anchor='rt', font=font_bd)
+                draw.text((c.L_SPACE - 20, y_offset + 85), str(floor.floor_constant),
+                          fill='white', anchor='ra', font=font_rg)
+            else:
+                # draw in plain SC value
+                draw.text((c.L_SPACE - 20, y_offset), f"{floor.floor_diff}{floor.floor_constant}",
+                          fill='white', anchor='rt', font=font_bd)
+
+        else:
+            draw.text((c.L_SPACE - 20, y_offset), "N/A", fill='white', anchor='rt', font=font_bd)
+
+    return await __render_base(__draw_group_header, data, dimension, main_pattern)
+
+async def render_new_scorelist(data: models.DMScorelist, dimension: tuple[int, int],
+                               main_pattern: str | None) -> Image.Image:
+    def __draw_group_header(floor: models.DMScorelistFloor, _data: models.DMScorelist,
+                            draw: ImageDraw.ImageDraw, y_offset: int) -> None:
+        draw.text((c.L_SPACE - 20, y_offset), f"{floor.floor_diff}{floor.floor_constant}",
+                  fill='white', anchor='rt', font=font_bd)
+
+    return await __render_base(__draw_group_header, data, dimension, main_pattern)
