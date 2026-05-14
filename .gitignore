@@ -3,6 +3,7 @@ __pycache__
 covers
 cache
 .DS_Store
-djmax_bests/images/bests/emblem_bg/*
-!djmax_bests/images/bests/emblem_bg/Max\ DJPower.png
+djmax_bests/generators/bests_generator/assets/emblem_bg/*
+!djmax_bests/generators/bests_generator/assets/emblem_bg/Max\ DJPower.png
 .vscode
+.idea

@@ -110,11 +110,11 @@ async def fetch_bests(username: str, bmode: int) -> "models.DMBests":
 
     va_resp_basic = VAResponse.model_validate_json(response_basic.text)
     va_resp_new = VAResponse.model_validate_json(response_new.text)
-    return DMBests.from_VAResponse(va_resp_basic, va_resp_new)
+    return DMBests.from_va_response(va_resp_basic, va_resp_new)
 
 async def fetch_scorelist(username: str, bmode: int, is_sc: bool, level: int) -> "models.DMScorelist":
     from .models import DMScorelist, VAResponse
-    print(f'Fetching scorelist for {username} - {bmode}b - {"SC" if is_sc else "NM,HD,MX"} - level {level}')
+    print(f'Fetching scorelist for {username} - {bmode}b - {"SC" if is_sc else "^SC"} - level {level}')
     url = build_req_url(
         username,
         bmode,
@@ -126,19 +126,48 @@ async def fetch_scorelist(username: str, bmode: int, is_sc: bool, level: int) ->
     response.raise_for_status()
     song_db = await fetch_song_db()
     va_resp = VAResponse.model_validate_json(response.text)
-    return DMScorelist.from_VAResponse(is_sc, level, song_db, va_resp)
+    return DMScorelist.from_va_response_level(is_sc, level, song_db, va_resp)
 
-async def fetch_scorelist_new(username: str, bmode: int) -> "models.DMScorelist":
+async def fetch_scorelist_new(username: str, bmode: int, diff: str) -> "models.DMScorelist":
     from .models import DMScorelist, VAResponse
-    print(f'Fetching scorelist for {username} - {bmode}b - NEW SONGS')
+    print(f'Fetching scorelist for {username} - {bmode}b - NEW - {diff}')
     url = build_req_url(
         username,
         bmode,
-        pattern = "SC",
+        pattern = diff,
         newTab = "true"
     )
     response = await client.get(url)
     response.raise_for_status()
     song_db = await fetch_song_db()
     va_resp = VAResponse.model_validate_json(response.text)
-    return DMScorelist.from_VAResponse_new(song_db, va_resp)
+    return DMScorelist.from_va_response_new(diff, song_db, va_resp)
+
+async def fetch_scorelist_pack(username: str, bmode: int, diff: str, pack: str) -> "models.DMScorelist":
+    from .models import DMScorelist, VAResponse
+    print(f'Fetching scorelist for {username} - {bmode}b - {pack} - {diff}')
+    url = build_req_url(
+        username,
+        bmode,
+        pattern = diff,
+        dlc = pack
+    )
+    response = await client.get(url)
+    response.raise_for_status()
+    song_db = await fetch_song_db()
+    va_resp = VAResponse.model_validate_json(response.text)
+    return DMScorelist.from_va_response_pack(diff, pack, song_db, va_resp)
+
+async def fetch_scorelist_pp(username: str, bmode: int) -> "models.DMScorelist":
+    from .models import DMScorelist, VAResponse
+    print(f'Fetching PP scorelist for {username} - {bmode}b')
+    url = build_req_url(
+        username,
+        bmode,
+        sort = "score",
+        order = "desc"
+    )
+    response = await client.get(url)
+    response.raise_for_status()
+    va_resp = VAResponse.model_validate_json(response.text)
+    return DMScorelist.from_va_response_pp(va_resp)
