@@ -1,7 +1,6 @@
 from PIL import Image
 
-from . import api_handler, models
-import generators
+from . import api_handler, models, generators
 
 
 async def generate_bests(username: str, bmode: int) -> Image.Image:
