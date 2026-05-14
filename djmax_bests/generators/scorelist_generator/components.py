@@ -36,7 +36,13 @@ async def generate_single_song(draw_pattern_text: bool, song: models.DMSongSimpl
     return img
 
 
-def assemble_background(height: int) -> Image.Image:
+def assemble_background(data: models.DMScorelist) -> Image.Image:
+    # Layout calculations
+    height = c.T_SPACE + c.B_SPACE
+    for floor in data.floors:
+        floor_height = (len(floor.songs) - 1) // c.LAYOUT_WIDTH + 1
+        height += c.GROUP_SEP_HEIGHT + c.CARD_GAP + floor_height * (c.CARD_SIZE[1] + c.CARD_GAP)
+
     bg = Image.new("RGBA", (2200, height))
 
     pasted_height = 0

@@ -20,10 +20,16 @@ async def generate_bests_theoretical(bmode: int) -> Image.Image:
 async def generate_scorelist(username: str, bmode: int, is_sc: bool, level: int) -> Image.Image:
     scorelist_data = await api_handler.fetch_scorelist(username, bmode, is_sc, level)
     scorelist_data.organize()
-    return await scorelist_generator.generate_scorelist_image(scorelist_data)
+    return await scorelist_generator.generate_scorelist_by_level(scorelist_data)
 
 
-async def generate_scorelist_new(username: str, bmode: int) -> Image.Image:
-    scorelist_data = await api_handler.fetch_scorelist_new(username, bmode)
+async def generate_scorelist_new(username: str, bmode: int, diff: str) -> Image.Image:
+    scorelist_data = await api_handler.fetch_scorelist_new(username, bmode, diff)
     scorelist_data.organize()
-    return await scorelist_generator.generate_scorelist_image(scorelist_data)
+    return await scorelist_generator.generate_scorelist_by_pack(scorelist_data, "NEW")
+
+
+async def generate_scorelist_pack(username: str, bmode: int, diff: str, pack: str) -> Image.Image:
+    scorelist_data = await api_handler.fetch_scorelist_pack(username, bmode, diff, pack)
+    scorelist_data.organize()
+    return await scorelist_generator.generate_scorelist_by_pack(scorelist_data, pack)

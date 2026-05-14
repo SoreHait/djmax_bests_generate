@@ -8,13 +8,14 @@ from . import constants as c
 from .components import generate_single_song
 
 
-font_rg = ImageFont.truetype(os.path.join(c.FONT_PATH, "Respect_rg.ttf"), 24)
-font_bd = ImageFont.truetype(os.path.join(c.FONT_PATH, "Respect_bd.ttf"), 100)
+font_rg = ImageFont.truetype(os.path.join(c.FONT_PATH, "Respect_rg.ttf"), 30)
+font_bd = ImageFont.truetype(os.path.join(c.FONT_PATH, "Respect_bd.ttf"), 90)
 mc_pos = (c.CARD_SIZE[0] - c.MC_IMG_SIZE[0] // 2 + c.MC_POS_OFFSET[0], 0 - c.MC_IMG_SIZE[1] // 2 + c.MC_POS_OFFSET[1])
 
 
-async def __render_base(group_header_func: Callable[[models.DMScorelistFloor, models.DMScorelist, ImageDraw.ImageDraw, int], None],
-                        data: models.DMScorelist, dimension: tuple[int, int], main_pattern: str | None) -> Image.Image:
+async def __render_base(group_header_func: Callable[[models.DMScorelistFloor, ImageDraw.ImageDraw, int], None],
+                        data: models.DMScorelist, dimension: tuple[int, int],
+                        need_pattern_text_func: Callable[[models.DMSongSimple], bool]) -> Image.Image:
     overlay = Image.new("RGBA", dimension)
     draw = ImageDraw.Draw(overlay)
     y_offset = c.T_SPACE
@@ -26,11 +27,10 @@ async def __render_base(group_header_func: Callable[[models.DMScorelistFloor, mo
             fill='white')
         y_offset += c.GROUP_SEP_HEIGHT + c.CARD_GAP
 
-        group_header_func(floor, data, draw, y_offset)
+        group_header_func(floor, draw, y_offset)
 
         for s_idx, song in enumerate(floor.songs):
-            need_pattern_text = song.pattern != main_pattern if main_pattern else True
-            with await generate_single_song(need_pattern_text, song) as card_image:
+            with await generate_single_song(need_pattern_text_func(song), song) as card_image:
                 if s_idx % c.LAYOUT_WIDTH == 0 and s_idx != 0:
                     x_offset = c.L_SPACE
                     y_offset += c.CARD_SIZE[1] + c.CARD_GAP
@@ -48,17 +48,15 @@ async def __render_base(group_header_func: Callable[[models.DMScorelistFloor, mo
     return overlay
 
 
-async def render_standard_scorelist(data: models.DMScorelist, dimension: tuple[int, int],
-                                    main_pattern: str | None) -> Image.Image:
-    def __draw_group_header(floor: models.DMScorelistFloor, _data: models.DMScorelist,
-                            draw: ImageDraw.ImageDraw, y_offset: int) -> None:
+async def render_songs_standard(data: models.DMScorelist, dimension: tuple[int, int], main_pattern: str) -> Image.Image:
+    def __draw_group_header(floor: models.DMScorelistFloor, draw: ImageDraw.ImageDraw, y_offset: int) -> None:
         if floor.floor_constant > 0:
-            if _data.is_sc:
+            if data.is_sc:
                 # draw in SC deviation value
                 scaled = floor.floor_constant * 10
                 integer = scaled // 10
                 decimal = scaled % 10
-                constant_offset = int((integer - _data.level) * 3 + (decimal - 1))
+                constant_offset = int((integer - data.level) * 3 + (decimal - 1))
                 draw.text((c.L_SPACE - 20, y_offset), f"{constant_offset:+}",
                           fill='white', anchor='rt', font=font_bd)
                 draw.text((c.L_SPACE - 20, y_offset + 85), str(floor.floor_constant),
@@ -71,13 +69,15 @@ async def render_standard_scorelist(data: models.DMScorelist, dimension: tuple[i
         else:
             draw.text((c.L_SPACE - 20, y_offset), "N/A", fill='white', anchor='rt', font=font_bd)
 
-    return await __render_base(__draw_group_header, data, dimension, main_pattern)
+    def __need_pattern_text_func(song: models.DMSongSimple) -> bool:
+        return song.pattern != main_pattern
 
-async def render_new_scorelist(data: models.DMScorelist, dimension: tuple[int, int],
-                               main_pattern: str | None) -> Image.Image:
-    def __draw_group_header(floor: models.DMScorelistFloor, _data: models.DMScorelist,
-                            draw: ImageDraw.ImageDraw, y_offset: int) -> None:
+    return await __render_base(__draw_group_header, data, dimension, __need_pattern_text_func)
+
+
+async def render_songs_by_pack(data: models.DMScorelist, dimension: tuple[int, int]) -> Image.Image:
+    def __draw_group_header(floor: models.DMScorelistFloor, draw: ImageDraw.ImageDraw, y_offset: int) -> None:
         draw.text((c.L_SPACE - 20, y_offset), f"{floor.floor_diff}{floor.floor_constant}",
                   fill='white', anchor='rt', font=font_bd)
 
-    return await __render_base(__draw_group_header, data, dimension, main_pattern)
+    return await __render_base(__draw_group_header, data, dimension, lambda _: False)

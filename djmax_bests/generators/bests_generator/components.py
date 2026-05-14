@@ -33,7 +33,7 @@ def __generate_single_song_sync(idx: int, card_type: str, song: models.DMSong, c
     draw.text((516, 17), f"#{idx}", font=font_bd, fill="black" if card_type == "new" else "#333333", anchor="mm")
 
     is_sc = song.pattern == "SC"
-    with util.assemble_diff_strip(is_sc=is_sc, level_to=song.level, diff_star_path=DIFF_STAR_PATH) as diff_strip:
+    with util.assemble_diff_strip_level(is_sc=is_sc, level_to=song.level, diff_star_path=DIFF_STAR_PATH) as diff_strip:
         bg.alpha_composite(diff_strip, (165, 52))
 
     if mc_state := util.get_mc_state(song.score, song.max_combo):
