@@ -91,6 +91,15 @@ class DMSongDB(RootModel[list[DMSongDBEntry]]):
         return matching_songs
 
 
+class VADLC(BaseModel):
+    dlcCode: str
+    dlcName: str
+    # ymdt: str
+
+class VADLCList(RootModel[list[VADLC]]):
+    pass
+
+
 class VARecord(BaseModel):
     title: int
     name: str

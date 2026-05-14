@@ -71,6 +71,21 @@ async def fetch_song_db() -> "models.DMSongDB":
         f.write(response.text)
     return DMSongDB.model_validate_json(response.text)
 
+async def fetch_dlc_list() -> "models.VADLCList":
+    from .models import VADLCList
+    dlc_path = os.path.join(CACHE_PATH, 'dlcs.json')
+    if os.path.exists(dlc_path):
+        with open(dlc_path, 'r', encoding='utf-8') as f:
+            return VADLCList.model_validate_json(f.read())
+
+    print("dlc list cache invalidated, fetching new one")
+    url = "https://v-archive.net/db/dlcs.json"
+    response = await client.get(url)
+    response.raise_for_status()
+    with open(dlc_path, 'w', encoding='utf-8') as f:
+        f.write(response.text)
+    return VADLCList.model_validate_json(response.text)
+
 def remove_cache():
     cache_files = os.listdir(CACHE_PATH)
     for file in cache_files:
