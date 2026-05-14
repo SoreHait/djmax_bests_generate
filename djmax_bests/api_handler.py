@@ -157,3 +157,17 @@ async def fetch_scorelist_pack(username: str, bmode: int, diff: str, pack: str) 
     song_db = await fetch_song_db()
     va_resp = VAResponse.model_validate_json(response.text)
     return DMScorelist.from_va_response_pack(diff, pack, song_db, va_resp)
+
+async def fetch_scorelist_pp(username: str, bmode: int) -> "models.DMScorelist":
+    from .models import DMScorelist, VAResponse
+    print(f'Fetching PP scorelist for {username} - {bmode}b')
+    url = build_req_url(
+        username,
+        bmode,
+        sort = "score",
+        order = "desc"
+    )
+    response = await client.get(url)
+    response.raise_for_status()
+    va_resp = VAResponse.model_validate_json(response.text)
+    return DMScorelist.from_va_response_pp(va_resp)

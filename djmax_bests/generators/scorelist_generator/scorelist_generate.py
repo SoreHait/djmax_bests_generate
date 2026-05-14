@@ -20,6 +20,9 @@ async def generate_scorelist_by_level(data: models.DMScorelist) -> Image.Image:
 
 
 async def generate_scorelist_by_pack(data: models.DMScorelist, pack_name: str) -> Image.Image:
+    """
+    Also works as NEW SONGS generator, by passing "NEW" into pack_name.
+    """
     if pack_name == "NEW":
         pack_color = '#f4bb00'
     else:
@@ -30,6 +33,17 @@ async def generate_scorelist_by_pack(data: models.DMScorelist, pack_name: str) -
     header_renderers.render_header_by_pack(data, bg, pack_name, pack_color)
 
     with await songs_renderers.render_songs_by_pack(data, bg.size) as overlay:
+        bg.alpha_composite(overlay)
+
+    return bg
+
+
+async def generate_scorelist_pp(data: models.DMScorelist) -> Image.Image:
+    bg = await asyncio.to_thread(assemble_background, data)
+
+    header_renderers.render_header_pp(data, bg)
+
+    with await songs_renderers.render_songs_pp(data, bg.size) as overlay:
         bg.alpha_composite(overlay)
 
     return bg

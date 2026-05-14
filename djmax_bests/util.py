@@ -91,6 +91,7 @@ def assemble_diff_strip_base(*, is_sc: bool, level_from: int | Decimal, level_to
 
 assemble_diff_strip_level = partial(assemble_diff_strip_base, level_from=1, draw_range_indicator=False)
 assemble_diff_strip_range = partial(assemble_diff_strip_base, draw_range_indicator=True)
+assemble_diff_strip_blank = partial(assemble_diff_strip_base, level_from=-1, level_to=-1, draw_range_indicator=False)
 
 
 def diff_coeff(diff: int, is_sc: bool) -> int:

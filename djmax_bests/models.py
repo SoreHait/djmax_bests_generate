@@ -271,7 +271,7 @@ class DMSongSimple(BaseModel):
 
 class DMScorelistFloor(BaseModel):
     floor_constant: Decimal
-    floor_diff: Literal["NM", "HD", "MX", "SC"]
+    floor_diff: Literal["NM", "HD", "MX", "SC", ""]
     songs: list[DMSongSimple]
 
 class DMScorelist(BaseModel):
@@ -349,10 +349,35 @@ class DMScorelist(BaseModel):
                     count_mc += 1
         return count_mc, count_pp
 
+    @property
+    def first_sc_level(self) -> Decimal:
+        for floor in self.floors:
+            if floor.floor_diff == "SC":
+                return floor.floor_constant
+        return Decimal(0)
+
+    @property
+    def first_nonsc_level(self) -> Decimal:
+        for floor in self.floors:
+            if floor.floor_diff != "SC":
+                return floor.floor_constant
+        return Decimal(0)
+
+    @property
+    def count_sc_nonsc(self) -> tuple[int, int]:
+        count_sc = 0
+        count_nonsc = 0
+        for floor in self.floors:
+            if floor.floor_diff == "SC":
+                count_sc += len(floor.songs)
+            else:
+                count_nonsc += len(floor.songs)
+        return count_sc, count_nonsc
+
 
     def organize(self):
         def __sort_floor(f: DMScorelistFloor) -> tuple[int, Decimal]:
-            diff_index = {"NM": 0, "HD": 1, "MX": 2, "SC": 3}[f.floor_diff]
+            diff_index = {"": -1, "NM": 0, "HD": 1, "MX": 2, "SC": 3}[f.floor_diff]
             return diff_index, f.floor_constant
         self.floors.sort(key=__sort_floor, reverse=True)
         for floor in self.floors:
@@ -360,7 +385,7 @@ class DMScorelist(BaseModel):
 
 
     @classmethod
-    def __make_songlist(cls, is_sc: bool, measure_in_sc_floor: bool, level: int,
+    def __make_songlist(cls, is_sc: bool, measure_in_sc_floor: bool, distinguish_nonsc_diff: bool, level: int,
                         all_patterns: SongDBMatches | None, va_response: VAResponse) -> "DMScorelist":
         floors: list[DMScorelistFloor] = []
         for pattern in va_response.records:
@@ -374,6 +399,9 @@ class DMScorelist(BaseModel):
             if not is_sc:
                 # drop decimal place
                 floor_constant = Decimal(int(floor_constant))
+
+            if not distinguish_nonsc_diff and floor_diff != "SC":
+                floor_diff = ""
 
             dm_song_simple = DMSongSimple(
                 songid=pattern.title,
@@ -404,6 +432,9 @@ class DMScorelist(BaseModel):
                 else:
                     floor_diff = diff
 
+                if not distinguish_nonsc_diff and floor_diff != "SC":
+                    floor_diff = ""
+
                 dm_song_simple = DMSongSimple(
                     songid=song_id,
                     pattern=diff,
@@ -429,14 +460,23 @@ class DMScorelist(BaseModel):
     @classmethod
     def from_va_response_level(cls, is_sc: bool, level: int, song_db: DMSongDB, va_response: VAResponse) -> "DMScorelist":
         all_patterns = song_db.get_songs_by_level(va_response.button, level, is_sc)
-        return cls.__make_songlist(is_sc, True, level, all_patterns, va_response)
+        return cls.__make_songlist(is_sc, True, False, level, all_patterns, va_response)
 
     @classmethod
     def from_va_response_new(cls, diff: str, song_db: DMSongDB, va_response: VAResponse) -> "DMScorelist":
         all_patterns = song_db.get_new_songs(va_response.button, diff)
-        return cls.__make_songlist(diff == "SC", False, 0, all_patterns, va_response)
+        return cls.__make_songlist(diff == "SC", False, True, 0, all_patterns, va_response)
 
     @classmethod
     def from_va_response_pack(cls, diff: str, pack: str, song_db: DMSongDB, va_response: VAResponse) -> "DMScorelist":
         all_patterns = song_db.get_songs_by_pack(va_response.button, diff, pack)
-        return cls.__make_songlist(diff == "SC", False, 0, all_patterns, va_response)
+        return cls.__make_songlist(diff == "SC", False, True, 0, all_patterns, va_response)
+
+    @classmethod
+    def from_va_response_pp(cls, va_response: VAResponse) -> "DMScorelist":
+        filtered_resp = VAResponse(
+            nickname=va_response.nickname,
+            button=va_response.button,
+            records=[record for record in va_response.records if record.score is not None and record.score == Decimal("100.00")]
+        )
+        return cls.__make_songlist(False, False, False, 0, None, filtered_resp)

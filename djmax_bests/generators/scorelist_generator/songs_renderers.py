@@ -81,3 +81,13 @@ async def render_songs_by_pack(data: models.DMScorelist, dimension: tuple[int, i
                   fill='white', anchor='rt', font=font_bd)
 
     return await __render_base(__draw_group_header, data, dimension, lambda _: False)
+
+async def render_songs_pp(data: models.DMScorelist, dimension: tuple[int, int]) -> Image.Image:
+    def __draw_group_header(floor: models.DMScorelistFloor, draw: ImageDraw.ImageDraw, y_offset: int) -> None:
+        draw.text((c.L_SPACE - 20, y_offset), f"{floor.floor_diff}{floor.floor_constant}",
+                  fill='white', anchor='rt', font=font_bd)
+
+    def __need_pattern_text_func(song: models.DMSongSimple) -> bool:
+        return song.pattern != "SC"
+
+    return await __render_base(__draw_group_header, data, dimension, __need_pattern_text_func)
