@@ -4,7 +4,7 @@ from typing import Callable
 
 from PIL import Image, ImageDraw, ImageFont
 
-from djmax_bests import models, constants, util
+from ... import models, constants, util
 from . import constants as c
 
 

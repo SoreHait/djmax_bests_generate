@@ -1,5 +1,5 @@
 from PIL import Image
-from djmax_bests import models
+from ... import models
 from .components import assemble_background, assemble_song_cards
 
 

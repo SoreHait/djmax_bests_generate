@@ -3,7 +3,7 @@ from random import random
 from PIL import Image, ImageDraw, ImageFont
 from math import ceil
 
-from djmax_bests import models, constants, api_handler, util
+from ... import models, constants, api_handler, util
 
 
 ASSET_PATH = os.path.join(os.path.dirname(__file__), "assets")

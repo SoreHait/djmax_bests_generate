@@ -3,7 +3,7 @@ from typing import Callable
 
 from PIL import Image, ImageDraw, ImageFont
 
-from djmax_bests import models, util
+from ... import models, util
 from . import constants as c
 from .components import generate_single_song
 

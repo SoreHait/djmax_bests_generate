@@ -1,7 +1,7 @@
 import os, asyncio
 from PIL import Image, ImageDraw, ImageFont
 
-from djmax_bests import models, constants, api_handler
+from ... import models, constants, api_handler
 from . import constants as c
 
 

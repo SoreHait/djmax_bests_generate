@@ -1,7 +1,7 @@
 import asyncio
 from PIL import Image
 
-from djmax_bests import models, constants
+from ... import models, constants
 from . import header_renderers, songs_renderers
 from .components import assemble_background
 
