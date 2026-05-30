@@ -15,13 +15,37 @@ HEADERS = {
     "User-Agent": "sh-util-bot/gh:SoreHait/djmax_bests_generate"
 }
 
+client = httpx.AsyncClient(headers=HEADERS)
+RETRIES = 3
+
+
 if not os.path.exists(COVER_PATH):
     os.makedirs(COVER_PATH)
 
 if not os.path.exists(CACHE_PATH):
     os.makedirs(CACHE_PATH)
 
-client = httpx.AsyncClient(headers=HEADERS)
+
+async def get_with_retry_async(url) -> httpx.Response:
+    global client, RETRIES
+
+    for _ in range(RETRIES):
+        try:
+            return await client.get(url)
+        except httpx.TimeoutException:
+            continue
+    raise httpx.TimeoutException(f"Failed to fetch {url} after {RETRIES} retries")
+
+def get_with_retry(url) -> httpx.Response:
+    global RETRIES, HEADERS
+
+    for _ in range(RETRIES):
+        try:
+            return httpx.get(url, headers=HEADERS)
+        except httpx.TimeoutException:
+            continue
+    raise httpx.TimeoutException(f"Failed to fetch {url} after {RETRIES} retries")
+
 
 async def get_cover(songid: int) -> Image.Image:
     img_path = os.path.join(COVER_PATH, f'{songid}.jpg')
@@ -30,7 +54,7 @@ async def get_cover(songid: int) -> Image.Image:
 
     url = f"https://v-archive.net/s3/images/jackets/{songid}.jpg"
     print(f'Fetching cover {songid}')
-    response = await client.get(url)
+    response = await get_with_retry_async(url)
     if response.status_code == 200:
         with open(img_path, 'wb') as f:
             f.write(response.content)
@@ -48,7 +72,7 @@ def get_convert_constant(bmode: int) -> tuple[Decimal, Decimal]:
 
     print(f'maxpower cache for {bmode}b invalidated, fetching new one')
     url = f"https://v-archive.net/api/v2/archive/DEV/djClass/{bmode}"
-    response = httpx.get(url, headers=HEADERS)
+    response = get_with_retry(url)
     response.raise_for_status()
     data = response.json()
     with open(maxpower_file, 'w') as f:
@@ -65,7 +89,7 @@ async def fetch_song_db() -> "models.DMSongDB":
 
     print("songdb cache invalidated, fetching new one")
     url = "https://v-archive.net/db/v2/songs.json"
-    response = await client.get(url)
+    response = await get_with_retry_async(url)
     response.raise_for_status()
     with open(db_path, 'w', encoding='utf-8') as f:
         f.write(response.text)
@@ -80,7 +104,7 @@ async def fetch_dlc_list() -> "models.VADLCList":
 
     print("dlc list cache invalidated, fetching new one")
     url = "https://v-archive.net/db/dlcs.json"
-    response = await client.get(url)
+    response = await get_with_retry_async(url)
     response.raise_for_status()
     with open(dlc_path, 'w', encoding='utf-8') as f:
         f.write(response.text)
@@ -118,9 +142,9 @@ async def fetch_bests(username: str, bmode: int) -> "models.DMBests":
         order = "desc",
         limit = "30"
     )
-    response_basic = await client.get(url_basic)
+    response_basic = await get_with_retry_async(url_basic)
     response_basic.raise_for_status()
-    response_new = await client.get(url_new)
+    response_new = await get_with_retry_async(url_new)
     response_new.raise_for_status()
 
     va_resp_basic = VAResponse.model_validate_json(response_basic.text)
@@ -137,7 +161,7 @@ async def fetch_scorelist(username: str, bmode: int, is_sc: bool, level: int) ->
         levelMin = level,
         levelMax = level
     )
-    response = await client.get(url)
+    response = await get_with_retry_async(url)
     response.raise_for_status()
     song_db = await fetch_song_db()
     va_resp = VAResponse.model_validate_json(response.text)
@@ -152,7 +176,7 @@ async def fetch_scorelist_new(username: str, bmode: int, diff: str) -> "models.D
         pattern = diff,
         newTab = "true"
     )
-    response = await client.get(url)
+    response = await get_with_retry_async(url)
     response.raise_for_status()
     song_db = await fetch_song_db()
     va_resp = VAResponse.model_validate_json(response.text)
@@ -167,7 +191,7 @@ async def fetch_scorelist_pack(username: str, bmode: int, diff: str, pack: str) 
         pattern = diff,
         dlc = pack
     )
-    response = await client.get(url)
+    response = await get_with_retry_async(url)
     response.raise_for_status()
     song_db = await fetch_song_db()
     va_resp = VAResponse.model_validate_json(response.text)
@@ -182,7 +206,7 @@ async def fetch_scorelist_pp(username: str, bmode: int) -> "models.DMScorelist":
         sort = "score",
         order = "desc"
     )
-    response = await client.get(url)
+    response = await get_with_retry_async(url)
     response.raise_for_status()
     va_resp = VAResponse.model_validate_json(response.text)
     return DMScorelist.from_va_response_pp(va_resp)
