@@ -40,7 +40,8 @@ DLC_COLOR = {
     "EZ2": "#00ecff",
     "GC": "#51eefe",
     "MD": "#fe3db3",
-    "OGK": "#81fb52"
+    "OGK": "#81fb52",
+    "VL5": "#ffffff"
 }
 
 BMODE_COLOR = {
