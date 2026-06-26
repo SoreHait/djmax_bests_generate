@@ -8,7 +8,7 @@ from . import constants as c
 from .components import generate_single_song
 
 
-font_rg = ImageFont.truetype(os.path.join(c.FONT_PATH, "Respect_rg.ttf"), 30)
+font_rg = ImageFont.truetype(os.path.join(c.FONT_PATH, "Respect_rg.ttf"), 44)
 font_bd = ImageFont.truetype(os.path.join(c.FONT_PATH, "Respect_bd.ttf"), 90)
 mc_pos = (c.CARD_SIZE[0] - c.MC_IMG_SIZE[0] // 2 + c.MC_POS_OFFSET[0], 0 - c.MC_IMG_SIZE[1] // 2 + c.MC_POS_OFFSET[1])
 
@@ -59,7 +59,7 @@ async def render_songs_standard(data: models.DMScorelist, dimension: tuple[int, 
                 constant_offset = int((integer - data.level) * 3 + (decimal - 1))
                 draw.text((c.L_SPACE - 20, y_offset), f"{constant_offset:+}",
                           fill='white', anchor='rt', font=font_bd)
-                draw.text((c.L_SPACE - 20, y_offset + 85), str(floor.floor_constant),
+                draw.text((c.L_SPACE - 20, y_offset + 85), f"({floor.floor_constant})",
                           fill='white', anchor='ra', font=font_rg)
             else:
                 # draw in plain SC value
