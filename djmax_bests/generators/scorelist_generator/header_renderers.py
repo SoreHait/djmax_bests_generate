@@ -28,7 +28,7 @@ def __render_stats_basic(data: models.DMScorelist, bg: Image.Image) -> None:
     font_bd = ImageFont.truetype(os.path.join(c.FONT_PATH, "Respect_bd.ttf"), 60)
     draw = ImageDraw.Draw(bg)
 
-    draw.text((868, 360), "Avg Rate", fill='white', anchor='ls', font=font_rg)
+    draw.text((868, 360), "Avg. Rate", fill='white', anchor='ls', font=font_rg)
     draw.text((868, 432), "Completion", fill='white', anchor='ls', font=font_rg)
     current_x = 1200
     avg_s = f"{data.avg_score:.2f}%"

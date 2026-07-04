@@ -240,7 +240,9 @@ class DMBests(BaseModel):
         __make_list(va_resp_basic, False)
         __make_list(va_resp_new, True)
 
-        return cls(username=va_resp_basic.nickname, bmode=va_resp_basic.button, basic=basic_songs, new=new_songs)
+        obj = cls(username=va_resp_basic.nickname, bmode=va_resp_basic.button, basic=basic_songs, new=new_songs)
+        obj.organize()
+        return obj
 
     @classmethod
     def get_theoretical_bests(cls, bmode: int, song_db: DMSongDB) -> "DMBests":
@@ -268,7 +270,9 @@ class DMBests(BaseModel):
             else:
                 basic_songs.append(dm_song)
 
-        return cls(username="Max DJPower", bmode=bmode, basic=basic_songs, new=new_songs)
+        obj = cls(username="Max DJPower", bmode=bmode, basic=basic_songs, new=new_songs)
+        obj.organize()
+        return obj
 
 
 class DMSongSimple(BaseModel):
@@ -281,7 +285,21 @@ class DMSongSimple(BaseModel):
 class DMScorelistFloor(BaseModel):
     floor_constant: Decimal
     floor_diff: Literal["NM", "HD", "MX", "SC", ""]
+    floor_avg_score: Decimal | None = None
+    floor_accumulated_avg_score: Decimal | None = None
     songs: list[DMSongSimple]
+
+    def calculate_avg_score(self) -> None:
+        score_sum = Decimal(0)
+        count = 0
+        for entry in self.songs:
+            if entry.score is not None and entry.score > Decimal(0):
+                score_sum += entry.score
+                count += 1
+        if count == 0:
+            self.floor_avg_score = Decimal(0)
+        else:
+            self.floor_avg_score = util.cut_digits(score_sum / count, 2)
 
 class DMScorelist(BaseModel):
     username: str
@@ -384,6 +402,20 @@ class DMScorelist(BaseModel):
         return count_sc, count_nonsc
 
 
+    def calculate_avg_score_by_floor(self) -> None:
+        accumulated_score_sum = Decimal(0)
+        accumulated_count = 0
+        for floor in self.floors[::-1]: # reverse order to calculate accumulated average score
+            floor.calculate_avg_score() # calculate average score for this floor
+            for entry in floor.songs:
+                if entry.score is not None and entry.score > Decimal(0):
+                    accumulated_score_sum += entry.score
+                    accumulated_count += 1
+            if accumulated_count == 0:
+                floor.floor_accumulated_avg_score = Decimal(0)
+            else:
+                floor.floor_accumulated_avg_score = util.cut_digits(accumulated_score_sum / accumulated_count, 2)
+
     def organize(self):
         def __sort_floor(f: DMScorelistFloor) -> tuple[int, Decimal]:
             diff_index = {"": -1, "NM": 0, "HD": 1, "MX": 2, "SC": 3}[f.floor_diff]
@@ -464,22 +496,30 @@ class DMScorelist(BaseModel):
                     )
                     floors.append(new_floor)
 
-        return cls(username=va_response.nickname, bmode=va_response.button, is_sc=is_sc, level=level, floors=floors)
+        obj = cls(username=va_response.nickname, bmode=va_response.button, is_sc=is_sc, level=level, floors=floors)
+        obj.organize()
+        return obj
 
     @classmethod
     def from_va_response_level(cls, is_sc: bool, level: int, song_db: DMSongDB, va_response: VAResponse) -> "DMScorelist":
         all_patterns = song_db.get_songs_by_level(va_response.button, level, is_sc)
-        return cls.__make_songlist(is_sc, True, False, level, all_patterns, va_response)
+        obj = cls.__make_songlist(is_sc, True, False, level, all_patterns, va_response)
+        obj.calculate_avg_score_by_floor()
+        return obj
 
     @classmethod
     def from_va_response_new(cls, diff: str, song_db: DMSongDB, va_response: VAResponse) -> "DMScorelist":
         all_patterns = song_db.get_new_songs(va_response.button, diff)
-        return cls.__make_songlist(diff == "SC", False, True, 0, all_patterns, va_response)
+        obj = cls.__make_songlist(diff == "SC", False, True, 0, all_patterns, va_response)
+        obj.calculate_avg_score_by_floor()
+        return obj
 
     @classmethod
     def from_va_response_pack(cls, diff: str, pack: str, song_db: DMSongDB, va_response: VAResponse) -> "DMScorelist":
         all_patterns = song_db.get_songs_by_pack(va_response.button, diff, pack)
-        return cls.__make_songlist(diff == "SC", False, True, 0, all_patterns, va_response)
+        obj = cls.__make_songlist(diff == "SC", False, True, 0, all_patterns, va_response)
+        obj.calculate_avg_score_by_floor()
+        return obj
 
     @classmethod
     def from_va_response_pp(cls, va_response: VAResponse) -> "DMScorelist":
