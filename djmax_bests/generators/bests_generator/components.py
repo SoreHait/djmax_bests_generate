@@ -73,7 +73,7 @@ async def assemble_song_cards(songs: list[models.DMSong], card_type: str) -> Ima
 
 def assemble_background(data: models.DMBests, is_max: bool) -> Image.Image:
     bmode_strip_box = (119, 40, 151, 468)
-    emblem_lt = (1029, 154)
+    emblem_lt = (1029, 129)
 
     bg = Image.open(os.path.join(ASSET_PATH, "bg.png"))
     draw = ImageDraw.Draw(bg)
@@ -99,16 +99,16 @@ def assemble_background(data: models.DMBests, is_max: bool) -> Image.Image:
 
     draw.rectangle(bmode_strip_box, fill=constants.BMODE_COLOR[data.bmode])
     draw.text((282, 370), str(data.bmode), font=font_bd, fill='white', anchor="ms")
-    draw.text((1535, 212), data.username, font=font_rg, fill='white', anchor="lm")
+    draw.text((1535, 187), data.username, font=font_rg, fill='white', anchor="lm")
     font_bd = font_bd.font_variant(size=64)
-    draw.text((1535, 306), djpower_desc, font=font_bd, fill=djpower_color, anchor="lm")
+    draw.text((1535, 281), djpower_desc, font=font_bd, fill=djpower_color, anchor="lm")
     font_rg = font_rg.font_variant(size=120)
     if is_max:
-        draw.text((1535, 400), f"10000.0000", font=font_rg, fill='white', anchor="lm")
+        draw.text((1535, 375), f"10000.0000", font=font_rg, fill='white', anchor="lm")
     else:
-        draw.text((1535, 400), f"{data.total_djpower:.4f}", font=font_rg, fill='white', anchor="lm")
+        draw.text((1535, 375), f"{data.total_djpower:.4f}", font=font_rg, fill='white', anchor="lm")
     font_rg = font_rg.font_variant(size=42)
-    draw.text((1795, 489), f"{data.total_djpower_raw:.4f}", font=font_rg, fill='white', anchor="lm")
+    draw.text((1795, 464), f"{data.total_djpower_raw:.4f}", font=font_rg, fill='white', anchor="lm")
 
     font_rg = font_rg.font_variant(size=76)
     font_rg_s = font_rg.font_variant(size=46)

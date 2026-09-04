@@ -25,6 +25,7 @@ DLC_COLOR = {
     "PLI1": "#dbd7ae",
     "PLI2": "#2269f7",
     "PLI3": "#ec6fb5",
+    "PLI4": "#2269f7",
     "GG": "#d83e0e",
     "BA": "#00d1ff",
     "ESTI": "#e9d19b",
