@@ -34,6 +34,7 @@ DLC_COLOR = {
     "MAP": "#bf2d10",
     "NXN": "#c3cc00",
     "TEK": "#f4f4f4",
+    "DNF": "#ff743d",
     "ARC": "#ffffff",
     "CHU": "#ffd700",
     "CY": "#ee1538",
