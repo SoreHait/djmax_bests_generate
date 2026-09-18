@@ -1,5 +1,6 @@
 from djmax_bests import api_handler
 import asyncio, os
+from pathlib import Path
 
 sem = asyncio.Semaphore(15)
 
@@ -10,7 +11,8 @@ async def worker(songid):
 async def main():
     api_handler.remove_cache()
     db = await api_handler.fetch_song_db()
-    exist_covers = os.listdir("./djmax_bests/covers")
+    cover_path = Path(__file__).parent / "djmax_bests" / "covers"
+    exist_covers = os.listdir(cover_path)
     inexist_covers = []
     for song in db.root:
         if f'{song.songid}.jpg' not in exist_covers:
