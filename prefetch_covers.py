@@ -10,7 +10,7 @@ async def worker(songid):
 async def main():
     api_handler.remove_cache()
     db = await api_handler.fetch_song_db()
-    exist_covers = os.listdir("djmax_bests/covers")
+    exist_covers = os.listdir("./djmax_bests/covers")
     inexist_covers = []
     for song in db.root:
         if f'{song.songid}.jpg' not in exist_covers:
